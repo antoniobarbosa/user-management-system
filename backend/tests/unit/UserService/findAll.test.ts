@@ -1,0 +1,69 @@
+import type { User } from "@domain/user/User.js";
+import { UserService } from "@application/user/UserService.js";
+import { describe, expect, it } from "vitest";
+import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
+import { UserBuilder } from "../../builders/UserBuilder.js";
+
+describe("UserService.findAll", () => {
+  it("returns paginated list with correct total", async () => {
+    const users: User[] = Array.from({ length: 25 }, (_, i) =>
+      UserBuilder.aUser().withFirstName(`User${i}`).build(),
+    );
+    const mockRepo = new MockUserRepositoryBuilder()
+      .withFindAll(async (page, limit) => {
+        const start = (page - 1) * limit;
+        return {
+          data: users.slice(start, start + limit),
+          total: users.length,
+        };
+      })
+      .build();
+
+    const service = new UserService(mockRepo);
+
+    const result = await service.findAll(1, 10);
+
+    expect(mockRepo.findAll).toHaveBeenCalledWith(1, 10);
+    expect(result.total).toBe(25);
+    expect(result.data).toHaveLength(10);
+  });
+
+  it("returns empty list if no users exist", async () => {
+    const mockRepo = new MockUserRepositoryBuilder()
+      .withFindAll(async () => ({ data: [], total: 0 }))
+      .build();
+
+    const service = new UserService(mockRepo);
+
+    const result = await service.findAll(1, 20);
+
+    expect(result.data).toEqual([]);
+    expect(result.total).toBe(0);
+    expect(mockRepo.findAll).toHaveBeenCalledWith(1, 20);
+  });
+
+  it("returns correct users for page 2", async () => {
+    const users: User[] = Array.from({ length: 25 }, (_, i) =>
+      UserBuilder.aUser().withFirstName(`User${i}`).build(),
+    );
+    const mockRepo = new MockUserRepositoryBuilder()
+      .withFindAll(async (page, limit) => {
+        const start = (page - 1) * limit;
+        return {
+          data: users.slice(start, start + limit),
+          total: users.length,
+        };
+      })
+      .build();
+
+    const service = new UserService(mockRepo);
+
+    const result = await service.findAll(2, 10);
+
+    expect(result.data).toHaveLength(10);
+    expect(result.data.map((u) => u.firstName)).toEqual(
+      users.slice(10, 20).map((u) => u.firstName),
+    );
+    expect(mockRepo.findAll).toHaveBeenCalledWith(2, 10);
+  });
+});

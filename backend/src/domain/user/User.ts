@@ -7,4 +7,6 @@ export class User extends BaseEntity {
   status!: UserStatus;
   loginsCounter!: number;
   updatedAt!: Date;
+  /** Hash armazenado após registro (nunca o texto plano). */
+  password?: string;
 }
