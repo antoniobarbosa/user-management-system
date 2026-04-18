@@ -23,7 +23,7 @@ describe("UserService.updateUser", () => {
     expect(mockRepo.update).not.toHaveBeenCalled();
   });
 
-  it("throws if user is INACTIVE and firstName is provided", async () => {
+  it("delegates validation to UserValidator", async () => {
     const inactive = UserBuilder.anInactiveUser().build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => inactive)
@@ -32,25 +32,7 @@ describe("UserService.updateUser", () => {
 
     await expect(
       service.updateUser(inactive.id, { firstName: "Changed" }),
-    ).rejects.toThrow(
-      "Cannot update first name or last name for an inactive user",
-    );
-
-    expect(mockRepo.update).not.toHaveBeenCalled();
-  });
-
-  it("throws if user is INACTIVE and lastName is provided", async () => {
-    const inactive = UserBuilder.anInactiveUser().build();
-    const mockRepo = new MockUserRepositoryBuilder()
-      .withFindById(async () => inactive)
-      .build();
-    const service = new UserService(mockRepo);
-
-    await expect(
-      service.updateUser(inactive.id, { lastName: "Changed" }),
-    ).rejects.toThrow(
-      "Cannot update first name or last name for an inactive user",
-    );
+    ).rejects.toThrow();
 
     expect(mockRepo.update).not.toHaveBeenCalled();
   });

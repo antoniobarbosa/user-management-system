@@ -80,38 +80,17 @@ describe("UserService.createUser", () => {
     expect(await bcrypt.compare(plaintext, result.password!)).toBe(true);
   });
 
-  it.each([
-    {
-      firstName: "",
-      lastName: "Doe",
-      password: "secret12",
-      error: "First name is required",
-    },
-    {
-      firstName: "Jane",
-      lastName: "",
-      password: "secret12",
-      error: "Last name is required",
-    },
-    {
-      firstName: "Jane",
-      lastName: "Doe",
-      password: "",
-      error: "Password is required",
-    },
-    {
-      firstName: "Jane",
-      lastName: "Doe",
-      password: "12345",
-      error: "Password must be at least 6 characters",
-    },
-  ])("throws on invalid input ($error)", async ({ firstName, lastName, password, error }) => {
+  it("delegates validation to UserValidator", async () => {
     const mockRepo = new MockUserRepositoryBuilder().build();
     const service = new UserService(mockRepo);
 
     await expect(
-      service.createUser({ firstName, lastName, password }),
-    ).rejects.toThrow(error);
+      service.createUser({
+        firstName: "",
+        lastName: "Doe",
+        password: "secret12",
+      }),
+    ).rejects.toThrow();
 
     expect(mockRepo.create).not.toHaveBeenCalled();
   });
