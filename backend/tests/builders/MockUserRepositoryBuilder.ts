@@ -1,5 +1,5 @@
 import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
-import { vi, type MockedObject } from "vitest";
+import { vi } from "vitest";
 
 export class MockUserRepositoryBuilder {
   private readonly create = vi.fn<IUserRepository["create"]>();
@@ -33,13 +33,13 @@ export class MockUserRepositoryBuilder {
     return this;
   }
 
-  build(): MockedObject<IUserRepository> {
+  build(): vi.Mocked<IUserRepository> {
     return {
       create: this.create,
       findAll: this.findAll,
       findById: this.findById,
       update: this.update,
       delete: this.delete,
-    } as MockedObject<IUserRepository>;
+    } as vi.Mocked<IUserRepository>;
   }
 }
