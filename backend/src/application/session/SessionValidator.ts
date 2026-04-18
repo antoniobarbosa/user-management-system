@@ -2,7 +2,7 @@ import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 
 export class SessionValidator {
-  static validateCreate(user: User | null): void {
+  static validateCreate(user: User | null): asserts user is User {
     if (!user) {
       throw new Error("User not found");
     }
