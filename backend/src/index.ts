@@ -1,15 +1,15 @@
 import "dotenv/config";
-import express from "express";
+import Fastify from "fastify";
 
-const app = express();
 const port = Number(process.env.PORT) || 3001;
+const app = Fastify({ logger: false });
 
-app.use(express.json());
+app.get("/health", async () => ({ status: "ok" }));
 
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-app.listen(port, () => {
+try {
+  await app.listen({ port, host: "0.0.0.0" });
   console.log(`Server listening on port ${port}`);
-});
+} catch (err) {
+  console.error(err);
+  process.exit(1);
+}
