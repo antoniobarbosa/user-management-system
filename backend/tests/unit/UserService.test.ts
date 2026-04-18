@@ -1,40 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
-import { User } from "@domain/user/User.js";
-import { UserStatus } from "@domain/user/UserStatus.js";
-// Replace with `@application/user/UserService.js` once the real service exists.
+import type { User } from "@domain/user/User.js";
+import { MockUserRepositoryBuilder } from "../builders/MockUserRepositoryBuilder.js";
+import { UserBuilder } from "../builders/UserBuilder.js";
 import { UserService } from "../fixtures/UserServiceStub.js";
 
-function createMockUserRepository(): IUserRepository {
-  return {
-    create: vi.fn(),
-    findAll: vi.fn(),
-    findById: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-  };
-}
-
-function buildUser(overrides: Partial<User> = {}): User {
-  const user = new User();
-  user.id = "11111111-1111-4111-8111-111111111111";
-  user.createdAt = new Date("2020-01-01T00:00:00.000Z");
-  user.updatedAt = new Date("2020-01-02T00:00:00.000Z");
-  user.firstName = "John";
-  user.lastName = "Smith";
-  user.status = UserStatus.ACTIVE;
-  user.loginsCounter = 0;
-  return Object.assign(user, overrides);
-}
-
 describe("UserService", () => {
-  let mockRepo: IUserRepository;
-  let service: UserService;
-
   beforeEach(() => {
     vi.useRealTimers();
-    mockRepo = createMockUserRepository();
-    service = new UserService(mockRepo);
   });
 
   describe("createUser", () => {
@@ -43,7 +15,10 @@ describe("UserService", () => {
       vi.useFakeTimers();
       vi.setSystemTime(fixedNow);
 
-      mockRepo.create.mockImplementation(async (user: User) => ({ ...user }));
+      const mockRepo = new MockUserRepositoryBuilder()
+        .withCreate(async (user: User) => ({ ...user }))
+        .build();
+      const service = new UserService(mockRepo);
 
       const result = await service.createUser({
         firstName: "Jane",
@@ -59,8 +34,11 @@ describe("UserService", () => {
 
   describe("updateUser", () => {
     it("cannot update firstName or lastName when user is inactive", async () => {
-      const inactive = buildUser({ status: UserStatus.INACTIVE });
-      mockRepo.findById.mockResolvedValue(inactive);
+      const inactive = UserBuilder.anInactiveUser().build();
+      const mockRepo = new MockUserRepositoryBuilder()
+        .withFindById(async () => inactive)
+        .build();
+      const service = new UserService(mockRepo);
 
       await expect(
         service.updateUser(inactive.id, { firstName: "Changed" }),
@@ -72,11 +50,12 @@ describe("UserService", () => {
     it("always updates updatedAt when applying an update", async () => {
       const t0 = new Date("2024-01-01T00:00:00.000Z");
       const t1 = new Date("2024-06-01T12:00:00.000Z");
-      const existing = buildUser({
-        updatedAt: t0,
-      });
-      mockRepo.findById.mockResolvedValue(existing);
-      mockRepo.update.mockImplementation(async (user: User) => ({ ...user }));
+      const existing = UserBuilder.aUser().withUpdatedAt(t0).build();
+      const mockRepo = new MockUserRepositoryBuilder()
+        .withFindById(async () => existing)
+        .withUpdate(async (user: User) => ({ ...user }))
+        .build();
+      const service = new UserService(mockRepo);
 
       vi.useFakeTimers();
       vi.setSystemTime(t1);
@@ -92,12 +71,15 @@ describe("UserService", () => {
 
     it("never changes createdAt on update", async () => {
       const createdAt = new Date("2019-05-05T08:00:00.000Z");
-      const existing = buildUser({
-        createdAt,
-        updatedAt: new Date("2019-05-06T08:00:00.000Z"),
-      });
-      mockRepo.findById.mockResolvedValue(existing);
-      mockRepo.update.mockImplementation(async (user: User) => ({ ...user }));
+      const existing = UserBuilder.aUser()
+        .withCreatedAt(createdAt)
+        .withUpdatedAt(new Date("2019-05-06T08:00:00.000Z"))
+        .build();
+      const mockRepo = new MockUserRepositoryBuilder()
+        .withFindById(async () => existing)
+        .withUpdate(async (user: User) => ({ ...user }))
+        .build();
+      const service = new UserService(mockRepo);
 
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2025-01-01T00:00:00.000Z"));
