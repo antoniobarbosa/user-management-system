@@ -12,6 +12,7 @@ function toUserResponse(user: User) {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
+    primaryEmail: user.primaryEmail?.toString(),
     status: user.status,
     loginsCounter: user.loginsCounter,
     createdAt: user.createdAt,

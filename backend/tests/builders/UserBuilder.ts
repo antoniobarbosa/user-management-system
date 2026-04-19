@@ -1,4 +1,6 @@
 import { faker } from "@faker-js/faker";
+import { UserEmail } from "@domain/email/UserEmail.js";
+import { Email } from "@domain/shared/valueObjects/Email.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 
@@ -11,6 +13,7 @@ export class UserBuilder {
   private status!: UserStatus;
   private loginsCounter!: number;
   private passwordHash?: string;
+  private hydratedEmails: UserEmail[] | null = null;
 
   private constructor() {}
 
@@ -69,24 +72,53 @@ export class UserBuilder {
     return this;
   }
 
-  /** bcrypt hash armazenado como `user.password` */
+  /** bcrypt hash stored as `user.password` */
   withPasswordHash(hash: string): this {
     this.passwordHash = hash;
     return this;
   }
 
+  withEmails(...emails: UserEmail[]): this {
+    this.hydratedEmails = [...emails];
+    return this;
+  }
+
+  withPrimaryEmail(email: string): this {
+    const ue = new UserEmail();
+    ue.id = faker.string.uuid();
+    ue.userId = this.id;
+    ue.email = new Email(email);
+    ue.primary = true;
+    ue.createdAt = this.createdAt;
+    this.hydratedEmails = [ue];
+    return this;
+  }
+
   build(): User {
-    const user = new User();
-    user.id = this.id;
-    user.createdAt = this.createdAt;
-    user.updatedAt = this.updatedAt;
-    user.firstName = this.firstName;
-    user.lastName = this.lastName;
-    user.status = this.status;
-    user.loginsCounter = this.loginsCounter;
-    if (this.passwordHash !== undefined) {
-      user.password = this.passwordHash;
-    }
+    const emails =
+      this.hydratedEmails?.map((e) => {
+        const c = new UserEmail();
+        c.id = e.id;
+        c.userId = this.id;
+        c.email = e.email;
+        c.primary = e.primary;
+        c.createdAt = e.createdAt;
+        return c;
+      }) ?? [];
+
+    const user = User.rehydrate(
+      {
+        id: this.id,
+        firstName: this.firstName,
+        lastName: this.lastName,
+        status: this.status,
+        loginsCounter: this.loginsCounter,
+        password: this.passwordHash,
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
+      },
+      emails,
+    );
     return user;
   }
 }

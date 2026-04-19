@@ -18,7 +18,7 @@ const port = Number(process.env.PORT) || 3001;
 const userRepository = new UserRepository(prisma);
 const userEmailRepository = new UserEmailRepository(prisma);
 const sessionRepository = new SessionRepository(prisma);
-const userService = new UserService(userRepository, userEmailRepository);
+const userService = new UserService(userRepository);
 const sessionService = new SessionService(
   sessionRepository,
   userRepository,

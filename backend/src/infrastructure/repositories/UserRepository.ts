@@ -4,6 +4,8 @@ import {
   buildPaginationMeta,
   type PaginationMeta,
 } from "@domain/shared/buildPaginationMeta.js";
+import { UserEmail } from "@domain/email/UserEmail.js";
+import { Email } from "@domain/shared/valueObjects/Email.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { prisma } from "@infrastructure/database/connection.js";
@@ -19,47 +21,86 @@ type UserRow = {
   updatedAt: Date;
 };
 
+type UserEmailRow = {
+  id: string;
+  userId: string;
+  email: string;
+  primary: boolean;
+  createdAt: Date;
+};
+
+const userIncludeEmails = { emails: true } as const;
+
+type UserRowWithEmails = UserRow & { emails: UserEmailRow[] };
+
 function mapStatus(value: string): UserStatus {
   if (value === UserStatus.ACTIVE) return UserStatus.ACTIVE;
   if (value === UserStatus.INACTIVE) return UserStatus.INACTIVE;
   throw new Error(`Invalid user status in database: ${value}`);
 }
 
-function toDomain(row: UserRow): User {
-  const user = new User();
-  user.id = row.id;
-  user.firstName = row.firstName;
-  user.lastName = row.lastName;
-  user.password = row.password;
-  user.status = mapStatus(row.status);
-  user.loginsCounter = row.loginsCounter;
-  user.createdAt = row.createdAt;
-  user.updatedAt = row.updatedAt;
-  return user;
+function mapUserEmailRow(row: UserEmailRow): UserEmail {
+  const userEmail = new UserEmail();
+  userEmail.id = row.id;
+  userEmail.userId = row.userId;
+  userEmail.email = new Email(row.email);
+  userEmail.primary = row.primary;
+  userEmail.createdAt = row.createdAt;
+  return userEmail;
+}
+
+function toDomain(row: UserRowWithEmails): User {
+  return User.rehydrate(
+    {
+      id: row.id,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      status: mapStatus(row.status),
+      loginsCounter: row.loginsCounter,
+      password: row.password,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    },
+    row.emails.map(mapUserEmailRow),
+  );
 }
 
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient = prisma) {}
 
   async create(user: User): Promise<User> {
-    if (user.password === undefined) {
+    const password = user.password;
+    if (password === undefined) {
       throw new Error("User password is required for persistence");
     }
 
-    const row = await this.prisma.user.create({
-      data: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        password: user.password,
-        status: user.status,
-        loginsCounter: user.loginsCounter,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+    const emailCreates = user.allEmails.map((ue) => ({
+      id: ue.id,
+      email: ue.email.toString(),
+      primary: ue.primary,
+      createdAt: ue.createdAt,
+    }));
+
+    const row = await this.prisma.$transaction(async (tx) => {
+      return tx.user.create({
+        data: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          password,
+          status: user.status,
+          loginsCounter: user.loginsCounter,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          emails: {
+            create: emailCreates,
+          },
+        },
+        include: userIncludeEmails,
+      });
     });
 
-    return toDomain(row);
+    return toDomain(row as UserRowWithEmails);
   }
 
   async findAll(
@@ -71,6 +112,7 @@ export class UserRepository implements IUserRepository {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: "desc" },
+        include: userIncludeEmails,
       }),
       this.prisma.user.count(),
     ]);
@@ -82,7 +124,10 @@ export class UserRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
-    const row = await this.prisma.user.findUnique({ where: { id } });
+    const row = await this.prisma.user.findUnique({
+      where: { id },
+      include: userIncludeEmails,
+    });
     return row ? toDomain(row) : null;
   }
 
@@ -92,6 +137,7 @@ export class UserRepository implements IUserRepository {
   ): Promise<User | null> {
     const row = await this.prisma.user.findFirst({
       where: { firstName, lastName },
+      include: userIncludeEmails,
     });
     return row ? toDomain(row) : null;
   }
@@ -107,6 +153,7 @@ export class UserRepository implements IUserRepository {
         updatedAt: user.updatedAt,
         ...(user.password !== undefined ? { password: user.password } : {}),
       },
+      include: userIncludeEmails,
     });
 
     return toDomain(row);

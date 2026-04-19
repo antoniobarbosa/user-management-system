@@ -57,10 +57,9 @@ export class SessionService {
     session.createdAt = now;
     session.terminatedAt = null;
 
-    const updatedUser = Object.assign(new User(), user, {
-      loginsCounter: user.loginsCounter + 1,
-      updatedAt: now,
-    });
+    const updatedUser = user.duplicate();
+    updatedUser.loginsCounter = user.loginsCounter + 1;
+    updatedUser.updatedAt = now;
     await this.userRepository.update(updatedUser);
 
     return this.sessionRepository.create(session);

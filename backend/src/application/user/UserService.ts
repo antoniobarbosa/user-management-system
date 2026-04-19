@@ -1,10 +1,8 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
-import type { IUserEmailRepository } from "@domain/repositories/IUserEmailRepository.js";
 import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
 import type { PaginationMeta } from "@domain/shared/buildPaginationMeta.js";
 import { Email } from "@domain/shared/valueObjects/Email.js";
-import { UserEmail } from "@domain/email/UserEmail.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { UserValidator } from "./UserValidator.js";
@@ -25,15 +23,10 @@ export type UpdateUserInput = {
 };
 
 export class UserService {
-  constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly userEmailRepository: IUserEmailRepository,
-  ) {}
+  constructor(private readonly userRepository: IUserRepository) {}
 
   async createUser(input: CreateUserInput): Promise<User> {
     UserValidator.validateCreate(input);
-    const emailVo = new Email(input.email);
-
     const now = new Date();
     const passwordHash = await bcrypt.hash(input.password, 10);
 
@@ -47,17 +40,9 @@ export class UserService {
     user.createdAt = now;
     user.updatedAt = now;
 
-    const created = await this.userRepository.create(user);
+    user.addEmail(new Email(input.email), true);
 
-    const userEmail = new UserEmail();
-    userEmail.id = randomUUID();
-    userEmail.userId = created.id;
-    userEmail.email = emailVo;
-    userEmail.primary = true;
-    userEmail.createdAt = now;
-    await this.userEmailRepository.create(userEmail);
-
-    return created;
+    return this.userRepository.create(user);
   }
 
   async updateUser(id: string, input: UpdateUserInput): Promise<User> {
@@ -73,7 +58,8 @@ export class UserService {
       Object.entries(input).filter(([, value]) => value !== undefined),
     ) as UpdateUserInput;
 
-    const updated = Object.assign(new User(), existing, inputPatch, {
+    const updated = existing.duplicate();
+    Object.assign(updated, inputPatch, {
       createdAt: existing.createdAt,
       updatedAt: now,
       password: existing.password,
