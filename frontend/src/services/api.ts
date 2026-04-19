@@ -1,4 +1,7 @@
-import { readSessionIdFromPersistedStore } from "@/lib/session-storage";
+import {
+  clearPersistedSessionAndCookie,
+  readSessionIdFromPersistedStore,
+} from "@/lib/session-storage";
 
 export class ApiError extends Error {
   constructor(
@@ -11,7 +14,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Caminhos relativos à origem do Next.js — o proxy em `next.config` encaminha `/api/*` para o backend. */
+/** Relative to the Next.js origin; `next.config` rewrites `/api/*` to the backend. */
 function resolveUrl(path: string): string {
   return path.startsWith("/") ? path : `/${path}`;
 }
@@ -22,9 +25,15 @@ function getSessionIdForRequest(): string | null {
 }
 
 export type ApiFetchOptions = RequestInit & {
-  /** Não envia o cabeçalho `x-session-id`. */
+  /** Do not send the `x-session-id` header. */
   skipSessionHeader?: boolean;
 };
+
+function handleUnauthorizedResponse(): void {
+  if (typeof window === "undefined") return;
+  clearPersistedSessionAndCookie();
+  window.location.href = "/auth";
+}
 
 export async function apiFetch<T>(
   path: string,
@@ -58,13 +67,16 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorizedResponse();
+    }
     const message =
       typeof json === "object" &&
       json !== null &&
       "error" in json &&
       typeof (json as { error: unknown }).error === "string"
         ? (json as { error: string }).error
-        : response.statusText || "Pedido falhou";
+        : response.statusText || "Request failed";
     throw new ApiError(message, response.status, json);
   }
 

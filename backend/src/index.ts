@@ -31,7 +31,7 @@ const app = Fastify({ logger: false });
 
 registerErrorHandler(app);
 
-const authPreHandler = createAuthMiddleware(sessionRepository);
+const authPreHandler = createAuthMiddleware(sessionRepository, userRepository);
 registerUserRoutes(app, userController, authPreHandler);
 registerSessionRoutes(app, sessionController, authPreHandler);
 

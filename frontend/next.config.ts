@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
     const apiUrl = process.env.API_URL?.trim();
     if (!apiUrl) {
       throw new Error(
-        "Defina API_URL (ex.: API_URL=http://localhost:3001) em .env.local para o proxy /api.",
+        "Set API_URL (e.g. API_URL=http://localhost:3001) in .env.local for the /api proxy.",
       );
     }
     const base = apiUrl.replace(/\/$/, "");

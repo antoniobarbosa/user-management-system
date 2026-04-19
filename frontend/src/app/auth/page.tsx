@@ -59,7 +59,7 @@ export default function AuthPage() {
       await establishSession(email, password);
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível iniciar sessão.");
+      setError(err instanceof ApiError ? err.message : "Could not sign in.");
     } finally {
       setPending(false);
     }
@@ -69,7 +69,7 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     if (password !== confirmPassword) {
-      setError("As palavras-passe não coincidem.");
+      setError("Passwords do not match.");
       return;
     }
     setPending(true);
@@ -78,7 +78,7 @@ export default function AuthPage() {
       await establishSession(email, password);
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível criar a conta.");
+      setError(err instanceof ApiError ? err.message : "Could not create account.");
     } finally {
       setPending(false);
     }
@@ -87,7 +87,7 @@ export default function AuthPage() {
   if (!mounted || !isHydrated || isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">A carregar…</p>
+        <p className="text-sm text-slate-500">Loading…</p>
       </div>
     );
   }
@@ -97,12 +97,12 @@ export default function AuthPage() {
       <div className="mx-auto w-full max-w-md">
         <div className="mb-10 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Gestão de utilizadores
+            User management
           </h1>
           <p className="mt-2 text-sm text-slate-600">
             {mode === "signin"
-              ? "Inicie sessão para continuar"
-              : "Crie uma conta para começar"}
+              ? "Sign in to continue"
+              : "Create an account to get started"}
           </p>
         </div>
 
@@ -120,7 +120,7 @@ export default function AuthPage() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Entrar
+              Sign in
             </button>
             <button
               type="button"
@@ -134,7 +134,7 @@ export default function AuthPage() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Registar
+              Sign up
             </button>
           </div>
 
@@ -161,12 +161,12 @@ export default function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2"
-                  placeholder="nome@empresa.com"
+                  placeholder="you@company.com"
                 />
               </div>
               <div>
                 <label htmlFor="signin-password" className="mb-1 block text-sm font-medium text-slate-700">
-                  Palavra-passe
+                  Password
                 </label>
                 <input
                   id="signin-password"
@@ -183,7 +183,7 @@ export default function AuthPage() {
                 disabled={pending}
                 className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {pending ? "A entrar…" : "Entrar"}
+                {pending ? "Signing in…" : "Sign in"}
               </button>
             </form>
           ) : (
@@ -191,7 +191,7 @@ export default function AuthPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="su-fn" className="mb-1 block text-sm font-medium text-slate-700">
-                    Nome
+                    First name
                   </label>
                   <input
                     id="su-fn"
@@ -205,7 +205,7 @@ export default function AuthPage() {
                 </div>
                 <div>
                   <label htmlFor="su-ln" className="mb-1 block text-sm font-medium text-slate-700">
-                    Apelido
+                    Last name
                   </label>
                   <input
                     id="su-ln"
@@ -230,12 +230,12 @@ export default function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
-                  placeholder="nome@empresa.com"
+                  placeholder="you@company.com"
                 />
               </div>
               <div>
                 <label htmlFor="su-pw" className="mb-1 block text-sm font-medium text-slate-700">
-                  Palavra-passe
+                  Password
                 </label>
                 <input
                   id="su-pw"
@@ -249,7 +249,7 @@ export default function AuthPage() {
               </div>
               <div>
                 <label htmlFor="su-pw2" className="mb-1 block text-sm font-medium text-slate-700">
-                  Confirmar palavra-passe
+                  Confirm password
                 </label>
                 <input
                   id="su-pw2"
@@ -266,7 +266,7 @@ export default function AuthPage() {
                 disabled={pending}
                 className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {pending ? "A criar conta…" : "Criar conta"}
+                {pending ? "Creating account…" : "Create account"}
               </button>
             </form>
           )}
@@ -274,7 +274,7 @@ export default function AuthPage() {
 
         <p className="mt-8 text-center text-sm text-slate-500">
           <Link href="/" className="font-medium text-slate-700 underline-offset-4 hover:underline">
-            Voltar ao início
+            Back to home
           </Link>
         </p>
       </div>

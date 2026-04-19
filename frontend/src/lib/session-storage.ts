@@ -6,8 +6,8 @@ import {
 const LEGACY_USER_KEY = "um_user";
 
 /**
- * Lê `sessionId` da chave `um_session`: formato `persist` do Zustand
- * (`{ state: { sessionId, user }, version }`) ou legado `{ id, userId, ... }`.
+ * Reads `sessionId` from `um_session`: Zustand `persist` shape
+ * (`{ state: { sessionId, user }, version }`) or legacy `{ id, userId, ... }`.
  */
 export function readSessionIdFromPersistedStore(): string | null {
   if (typeof window === "undefined") return null;
@@ -45,4 +45,16 @@ export function removeLegacyUserStorage(): void {
   } catch {
     /* ignore */
   }
+}
+
+/** Clears persisted session + cookie (same keys as Zustand `clearSession`). Safe for `api.ts` without importing the store. */
+export function clearPersistedSessionAndCookie(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(UM_SESSION_STORAGE_KEY);
+    removeLegacyUserStorage();
+  } catch {
+    /* ignore */
+  }
+  if (typeof document !== "undefined") clearSessionIdCookie();
 }
