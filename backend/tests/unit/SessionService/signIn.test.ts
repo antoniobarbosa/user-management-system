@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { SessionService } from "@application/session/SessionService.js";
+import { NotFoundError } from "@domain/errors.js";
 import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,7 +29,7 @@ describe("SessionService.signIn", () => {
 
     await expect(
       service.signIn("missing@example.com", "password"),
-    ).rejects.toThrow("User not found");
+    ).rejects.toThrow(NotFoundError);
 
     expect(mockUserRepo.findById).not.toHaveBeenCalled();
   });
@@ -58,7 +59,7 @@ describe("SessionService.signIn", () => {
 
     await expect(
       service.signIn("jane@example.com", "wrong-password"),
-    ).rejects.toThrow("Invalid password");
+    ).rejects.toThrow("Invalid credentials");
   });
 
   it('throws "User is inactive" if user is inactive', async () => {

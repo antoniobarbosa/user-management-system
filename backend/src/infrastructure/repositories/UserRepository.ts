@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { ValidationError } from "@domain/errors.js";
 import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
 import {
   buildPaginationMeta,
@@ -36,7 +37,7 @@ type UserRowWithEmails = UserRow & { emails: UserEmailRow[] };
 function mapStatus(value: string): UserStatus {
   if (value === UserStatus.ACTIVE) return UserStatus.ACTIVE;
   if (value === UserStatus.INACTIVE) return UserStatus.INACTIVE;
-  throw new Error(`Invalid user status in database: ${value}`);
+  throw new ValidationError(`Invalid user status in database: ${value}`);
 }
 
 function mapUserEmailRow(row: UserEmailRow): UserEmail {
@@ -71,7 +72,7 @@ export class UserRepository implements IUserRepository {
   async create(user: User): Promise<User> {
     const password = user.password;
     if (password === undefined) {
-      throw new Error("User password is required for persistence");
+      throw new ValidationError("User password is required for persistence");
     }
 
     const emailCreates = user.allEmails.map((ue) => ({

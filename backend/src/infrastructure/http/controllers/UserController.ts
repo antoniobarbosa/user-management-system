@@ -1,3 +1,4 @@
+import { NotFoundError, ValidationError } from "@domain/errors.js";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
@@ -39,7 +40,7 @@ function parseUserStatus(value: unknown): UserStatus | undefined {
   if (value === UserStatus.ACTIVE || value === UserStatus.INACTIVE) {
     return value;
   }
-  throw new Error("Invalid status");
+  throw new ValidationError("Invalid status");
 }
 
 export class UserController {
@@ -100,10 +101,10 @@ export class UserController {
     const limit = Number(limitRaw);
 
     if (!Number.isInteger(page) || page < 1) {
-      throw new Error("Invalid page");
+      throw new ValidationError("Invalid page");
     }
     if (!Number.isInteger(limit) || limit < 1) {
-      throw new Error("Invalid limit");
+      throw new ValidationError("Invalid limit");
     }
 
     const result = await this.userService.findAll(page, limit);
@@ -117,7 +118,7 @@ export class UserController {
     const { id } = request.params as { id: string };
     const user = await this.userService.findById(id);
     if (!user) {
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
     reply.send(toUserResponse(user));
   }
