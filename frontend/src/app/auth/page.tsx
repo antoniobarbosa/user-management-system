@@ -1,0 +1,283 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ApiError } from "@/services/api";
+import * as authService from "@/services/authService";
+import {
+  useSessionStore,
+  useSessionStoreHydrated,
+} from "@/store/sessionStore";
+
+type Mode = "signin" | "signup";
+
+async function establishSession(email: string, password: string) {
+  const session = await authService.signIn(email, password);
+  useSessionStore.getState().setSession(session.id, {
+    id: session.userId,
+    firstName: "",
+    lastName: "",
+  });
+  const user = await authService.getUserById(session.userId);
+  useSessionStore.getState().setSession(session.id, {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+  });
+}
+
+export default function AuthPage() {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const isHydrated = useSessionStoreHydrated();
+  const isAuthenticated = useSessionStore((s) => s.sessionId !== null);
+  const [mode, setMode] = useState<Mode>("signin");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !isHydrated || !isAuthenticated) return;
+    router.replace("/dashboard");
+  }, [isAuthenticated, isHydrated, mounted, router]);
+
+  async function handleSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setPending(true);
+    try {
+      await establishSession(email, password);
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível iniciar sessão.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (password !== confirmPassword) {
+      setError("As palavras-passe não coincidem.");
+      return;
+    }
+    setPending(true);
+    try {
+      await authService.signUp(firstName, lastName, email, password);
+      await establishSession(email, password);
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível criar a conta.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (!mounted || !isHydrated || isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="text-sm text-slate-500">A carregar…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-16">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-10 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Gestão de utilizadores
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            {mode === "signin"
+              ? "Inicie sessão para continuar"
+              : "Crie uma conta para começar"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm shadow-slate-200/60">
+          <div className="mb-6 flex rounded-lg bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signin");
+                setError(null);
+              }}
+              className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
+                mode === "signin"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signup");
+                setError(null);
+              }}
+              className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
+                mode === "signup"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Registar
+            </button>
+          </div>
+
+          {error ? (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+            >
+              {error}
+            </div>
+          ) : null}
+
+          {mode === "signin" ? (
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div>
+                <label htmlFor="signin-email" className="mb-1 block text-sm font-medium text-slate-700">
+                  Email
+                </label>
+                <input
+                  id="signin-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2"
+                  placeholder="nome@empresa.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="signin-password" className="mb-1 block text-sm font-medium text-slate-700">
+                  Palavra-passe
+                </label>
+                <input
+                  id="signin-password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition focus:border-slate-300 focus:ring-2"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pending}
+                className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pending ? "A entrar…" : "Entrar"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="su-fn" className="mb-1 block text-sm font-medium text-slate-700">
+                    Nome
+                  </label>
+                  <input
+                    id="su-fn"
+                    type="text"
+                    autoComplete="given-name"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="su-ln" className="mb-1 block text-sm font-medium text-slate-700">
+                    Apelido
+                  </label>
+                  <input
+                    id="su-ln"
+                    type="text"
+                    autoComplete="family-name"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="su-email" className="mb-1 block text-sm font-medium text-slate-700">
+                  Email
+                </label>
+                <input
+                  id="su-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                  placeholder="nome@empresa.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="su-pw" className="mb-1 block text-sm font-medium text-slate-700">
+                  Palavra-passe
+                </label>
+                <input
+                  id="su-pw"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                />
+              </div>
+              <div>
+                <label htmlFor="su-pw2" className="mb-1 block text-sm font-medium text-slate-700">
+                  Confirmar palavra-passe
+                </label>
+                <input
+                  id="su-pw2"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pending}
+                className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pending ? "A criar conta…" : "Criar conta"}
+              </button>
+            </form>
+          )}
+        </div>
+
+        <p className="mt-8 text-center text-sm text-slate-500">
+          <Link href="/" className="font-medium text-slate-700 underline-offset-4 hover:underline">
+            Voltar ao início
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
