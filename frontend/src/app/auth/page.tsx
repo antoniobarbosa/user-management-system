@@ -32,7 +32,7 @@ export default function AuthPage() {
   const [mounted, setMounted] = useState(false);
   const isHydrated = useSessionStoreHydrated();
   const isAuthenticated = useSessionStore((s) => s.sessionId !== null);
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>("signup");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -110,6 +110,7 @@ export default function AuthPage() {
           <div className="mb-6 flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
             <button
               type="button"
+              data-testid="auth-tab-signin"
               onClick={() => {
                 setMode("signin");
                 setError(null);
@@ -124,6 +125,7 @@ export default function AuthPage() {
             </button>
             <button
               type="button"
+              data-testid="auth-tab-signup"
               onClick={() => {
                 setMode("signup");
                 setError(null);
@@ -141,6 +143,7 @@ export default function AuthPage() {
           {error ? (
             <div
               role="alert"
+              data-testid="auth-error"
               className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
             >
               {error}
@@ -148,13 +151,14 @@ export default function AuthPage() {
           ) : null}
 
           {mode === "signin" ? (
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSignIn} className="space-y-4" data-testid="sign-in-form">
               <div>
                 <label htmlFor="signin-email" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Email
                 </label>
                 <input
                   id="signin-email"
+                  data-testid="sign-in-email"
                   type="email"
                   autoComplete="email"
                   required
@@ -170,6 +174,7 @@ export default function AuthPage() {
                 </label>
                 <input
                   id="signin-password"
+                  data-testid="sign-in-password"
                   type="password"
                   autoComplete="current-password"
                   required
@@ -180,6 +185,7 @@ export default function AuthPage() {
               </div>
               <button
                 type="submit"
+                data-testid="sign-in-submit"
                 disabled={pending}
                 className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               >
@@ -187,7 +193,7 @@ export default function AuthPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleSignUp} className="space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-4" data-testid="sign-up-form">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="su-fn" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -195,6 +201,7 @@ export default function AuthPage() {
                   </label>
                   <input
                     id="su-fn"
+                    data-testid="sign-up-first-name"
                     type="text"
                     autoComplete="given-name"
                     required
@@ -209,6 +216,7 @@ export default function AuthPage() {
                   </label>
                   <input
                     id="su-ln"
+                    data-testid="sign-up-last-name"
                     type="text"
                     autoComplete="family-name"
                     required
@@ -224,6 +232,7 @@ export default function AuthPage() {
                 </label>
                 <input
                   id="su-email"
+                  data-testid="sign-up-email"
                   type="email"
                   autoComplete="email"
                   required
@@ -239,6 +248,7 @@ export default function AuthPage() {
                 </label>
                 <input
                   id="su-pw"
+                  data-testid="sign-up-password"
                   type="password"
                   autoComplete="new-password"
                   required
@@ -253,6 +263,7 @@ export default function AuthPage() {
                 </label>
                 <input
                   id="su-pw2"
+                  data-testid="sign-up-confirm-password"
                   type="password"
                   autoComplete="new-password"
                   required
@@ -263,6 +274,7 @@ export default function AuthPage() {
               </div>
               <button
                 type="submit"
+                data-testid="sign-up-submit"
                 disabled={pending}
                 className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               >

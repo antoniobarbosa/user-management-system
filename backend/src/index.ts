@@ -10,6 +10,7 @@ import { UserController } from "@infrastructure/http/controllers/UserController.
 import { SessionController } from "@infrastructure/http/controllers/SessionController.js";
 import { registerUserRoutes } from "@infrastructure/http/routes/userRoutes.js";
 import { registerSessionRoutes } from "@infrastructure/http/routes/sessionRoutes.js";
+import { registerTestRoutes } from "@infrastructure/http/routes/testRoutes.js";
 import { registerErrorHandler } from "@infrastructure/http/middlewares/errorHandler.js";
 import { createAuthMiddleware } from "@infrastructure/http/middlewares/authMiddleware.js";
 
@@ -34,6 +35,10 @@ registerErrorHandler(app);
 const authPreHandler = createAuthMiddleware(sessionRepository, userRepository);
 registerUserRoutes(app, userController, authPreHandler);
 registerSessionRoutes(app, sessionController, authPreHandler);
+
+if (process.env.NODE_ENV === "test") {
+  registerTestRoutes(app);
+}
 
 app.get("/health", async () => ({ status: "ok" }));
 
