@@ -1,4 +1,5 @@
 import "dotenv/config";
+import cookie from "@fastify/cookie";
 import Fastify from "fastify";
 import type { AppLogger } from "@application/logger.js";
 import { UserService } from "@application/user/UserService.js";
@@ -19,6 +20,8 @@ import { createAuthMiddleware } from "@infrastructure/http/middlewares/authMiddl
 const port = Number(process.env.PORT) || 3001;
 
 const app = Fastify({ logger: buildFastifyLoggerConfig() });
+
+await app.register(cookie);
 
 const log = app.log as unknown as AppLogger;
 

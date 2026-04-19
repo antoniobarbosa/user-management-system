@@ -12,6 +12,8 @@ import {
 
 type Mode = "signin" | "signup";
 
+type ServerSessionProbe = "pending" | "none" | "present";
+
 async function establishSession(email: string, password: string) {
   const session = await authService.signIn(email, password);
   useSessionStore.getState().setSession(session.id, {
@@ -19,8 +21,8 @@ async function establishSession(email: string, password: string) {
     firstName: "",
     lastName: "",
   });
-  const user = await authService.getUserById(session.userId);
-  useSessionStore.getState().setSession(session.id, {
+  const user = await authService.getMe();
+  useSessionStore.getState().setUser({
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -31,7 +33,9 @@ export default function AuthPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const isHydrated = useSessionStoreHydrated();
-  const isAuthenticated = useSessionStore((s) => s.sessionId !== null);
+  const [serverSession, setServerSession] =
+    useState<ServerSessionProbe>("pending");
+  const sessionId = useSessionStore((s) => s.sessionId);
   const [mode, setMode] = useState<Mode>("signup");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -47,9 +51,28 @@ export default function AuthPage() {
   }, []);
 
   useEffect(() => {
-    if (!mounted || !isHydrated || !isAuthenticated) return;
-    router.replace("/dashboard");
-  }, [isAuthenticated, isHydrated, mounted, router]);
+    if (!mounted || !isHydrated) return;
+    if (!sessionId?.trim()) {
+      setServerSession("none");
+      return;
+    }
+    let cancelled = false;
+    void authService
+      .getMe()
+      .then(() => {
+        if (cancelled) return;
+        setServerSession("present");
+        router.replace("/dashboard");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        useSessionStore.getState().clearSession();
+        setServerSession("none");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, isHydrated, sessionId, router]);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -93,7 +116,12 @@ export default function AuthPage() {
     }
   }
 
-  if (!mounted || !isHydrated || isAuthenticated) {
+  if (
+    !mounted ||
+    !isHydrated ||
+    serverSession === "pending" ||
+    serverSession === "present"
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
