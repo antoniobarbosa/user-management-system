@@ -7,6 +7,10 @@ import type {
   UpdateUserInput,
 } from "@application/user/UserService.js";
 import { UserService } from "@application/user/UserService.js";
+import {
+  attachSessionCookie,
+  SESSION_COOKIE_NAME,
+} from "../sessionCookie.js";
 
 function toUserResponse(user: User) {
   return {
@@ -57,10 +61,35 @@ export class UserController {
       { userId: user.id, sessionId: session?.id ?? null },
       "User registration response sent",
     );
+
+    if (session) {
+      const existing = request.cookies[SESSION_COOKIE_NAME];
+      const hadSessionCookie =
+        typeof existing === "string" && existing.trim().length > 0;
+      if (!hadSessionCookie) {
+        attachSessionCookie(reply, session.id);
+      }
+    }
+
     reply.code(201).send({
       user: toUserResponse(user),
       session: session ? toSessionResponse(session) : null,
     });
+  }
+
+  async getCurrentUser(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const sid = request.session;
+    if (!sid) {
+      throw new Error("Unauthorized");
+    }
+    const user = await this.userService.findById(sid.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    reply.send(toUserResponse(user));
   }
 
   async findAll(request: FastifyRequest, reply: FastifyReply): Promise<void> {

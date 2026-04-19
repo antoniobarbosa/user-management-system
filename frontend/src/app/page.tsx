@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import * as authService from "@/services/authService";
 import {
   useSessionStore,
   useSessionStoreHydrated,
@@ -11,7 +12,7 @@ export default function Home() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const isHydrated = useSessionStoreHydrated();
-  const isAuthenticated = useSessionStore((s) => s.sessionId !== null);
+  const sessionId = useSessionStore((s) => s.sessionId);
 
   useEffect(() => {
     setMounted(true);
@@ -19,8 +20,18 @@ export default function Home() {
 
   useEffect(() => {
     if (!mounted || !isHydrated) return;
-    router.replace(isAuthenticated ? "/dashboard" : "/auth");
-  }, [isAuthenticated, isHydrated, mounted, router]);
+    if (!sessionId?.trim()) {
+      router.replace("/auth");
+      return;
+    }
+    void authService
+      .getMe()
+      .then(() => router.replace("/dashboard"))
+      .catch(() => {
+        useSessionStore.getState().clearSession();
+        router.replace("/auth");
+      });
+  }, [isHydrated, mounted, router, sessionId]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">

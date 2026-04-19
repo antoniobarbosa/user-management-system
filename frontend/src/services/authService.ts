@@ -14,8 +14,8 @@ export async function signUp(
 ): Promise<SignUpResult> {
   const data = await apiFetch<{ user: User; session: Session | null }>("/api/users", {
     method: "POST",
-    skipSessionHeader: true,
     body: JSON.stringify({ firstName, lastName, email, password }),
+    skipSessionHeader: true,
   });
   if (!data.session) {
     throw new ApiError(
@@ -30,15 +30,19 @@ export async function signUp(
 export async function signIn(email: string, password: string): Promise<Session> {
   return apiFetch<Session>("/api/auth/signin", {
     method: "POST",
-    skipSessionHeader: true,
     body: JSON.stringify({ email, password }),
+    skipSessionHeader: true,
   });
 }
 
-export async function signOut(sessionId: string): Promise<void> {
-  await apiFetch<unknown>(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+export async function signOut(): Promise<void> {
+  await apiFetch<unknown>("/api/sessions/current", {
     method: "DELETE",
   });
+}
+
+export async function getMe(): Promise<User> {
+  return apiFetch<User>("/api/users/me");
 }
 
 export async function getUserById(userId: string): Promise<User> {

@@ -11,6 +11,11 @@ export function registerSessionRoutes(
 ): void {
   app.post("/api/auth/signin", (req, reply) => controller.signIn(req, reply));
   app.delete(
+    "/api/sessions/current",
+    { preHandler: authPreHandler },
+    (req, reply) => controller.terminateCurrentSession(req, reply),
+  );
+  app.delete(
     "/api/sessions/:id",
     { preHandler: authPreHandler },
     (req, reply) => controller.terminateSession(req, reply),

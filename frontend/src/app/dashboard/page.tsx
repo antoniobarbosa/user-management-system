@@ -303,14 +303,27 @@ function DashboardContent() {
   );
 
   useEffect(() => {
-    if (!mounted || !isHydrated || !sessionId) return;
-    void fetchUsersForPage(page);
-  }, [mounted, isHydrated, sessionId, page, fetchUsersForPage]);
-
-  useEffect(() => {
     if (!mounted || !isHydrated) return;
-    if (!sessionId) router.replace("/auth");
-  }, [mounted, isHydrated, sessionId, router]);
+    if (!sessionId?.trim()) {
+      router.replace("/auth");
+      return;
+    }
+    void (async () => {
+      try {
+        const me = await authService.getMe();
+        useSessionStore.getState().setUser({
+          id: me.id,
+          firstName: me.firstName,
+          lastName: me.lastName,
+        });
+      } catch {
+        useSessionStore.getState().clearSession();
+        router.replace("/auth");
+        return;
+      }
+      await fetchUsersForPage(page);
+    })();
+  }, [mounted, isHydrated, page, fetchUsersForPage, router, sessionId]);
 
   function openCreateModal() {
     setCreateError(null);
@@ -447,13 +460,10 @@ function DashboardContent() {
   }
 
   async function handleLogout() {
-    const sid = useSessionStore.getState().sessionId;
-    if (sid) {
-      try {
-        await authService.signOut(sid);
-      } catch {
-        /* clear local session anyway */
-      }
+    try {
+      await authService.signOut();
+    } catch {
+      /* still clear local profile */
     }
     useSessionStore.getState().clearSession();
     router.replace("/auth");
@@ -463,14 +473,6 @@ function DashboardContent() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-      </div>
-    );
-  }
-
-  if (!sessionId) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Redirecting…</p>
       </div>
     );
   }

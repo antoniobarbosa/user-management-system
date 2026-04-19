@@ -149,7 +149,7 @@ test.describe("Dashboard", () => {
       await page.getByText("Loading list…").waitFor({ state: "hidden" });
     }
 
-    await page.goto("/dashboard?page=2");
+    await page.getByRole("button", { name: "2" }).click();
     await page.waitForURL(/\/dashboard\?page=2/);
     await expect(page).toHaveURL(/\/dashboard\?page=2/);
     await expect(page.getByTestId("user-pagination")).toBeVisible();
