@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
@@ -27,6 +27,7 @@
     "@vitest/coverage-v8": "^4.1.4",
     "prisma": "^6.6.0",
     "supertest": "^7.1.0",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vitest": "^4.1.4"

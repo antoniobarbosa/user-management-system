@@ -1,47 +1,44 @@
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
-    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
-      POSTGRES_DB: ${POSTGRES_DB:-backoffice}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_DB: usermgmt
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-backoffice}"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d usermgmt"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: unless-stopped
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://admin:secret@db:5432/usermgmt
+      PORT: 3001
+      CORS_ORIGIN: http://localhost
     ports:
       - "3001:3001"
-    environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      PORT: 3001
-      DATABASE_URL: ${DATABASE_URL:-postgresql://app:app@postgres:5432/backoffice}
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    restart: unless-stopped
+      args:
+        API_URL: http://backend:3001
+    environment:
+      API_URL: http://backend:3001
     ports:
       - "80:3000"
-    environment:
-      NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       - backend
 
 volumes:
-  postgres_data:
+  pgdata:
