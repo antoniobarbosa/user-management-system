@@ -7,6 +7,8 @@ import { Email } from "@domain/shared/valueObjects/Email.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { SessionService } from "@application/session/SessionService.js";
+import type { AppLogger } from "../logger.js";
+import { noopLogger } from "../logger.js";
 import { UserValidator } from "./UserValidator.js";
 
 export type CreateUserInput = {
@@ -33,6 +35,7 @@ export class UserService {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly sessionService: SessionService,
+    private readonly log: AppLogger = noopLogger,
   ) {}
 
   async createUser(input: CreateUserInput): Promise<CreateUserResult> {
@@ -53,6 +56,10 @@ export class UserService {
     user.addEmail(new Email(input.email), true);
 
     const created = await this.userRepository.create(user);
+    this.log.info(
+      { userId: created.id, status: created.status },
+      "User created",
+    );
 
     if (created.status !== UserStatus.ACTIVE) {
       return { user: created, session: null };
@@ -83,7 +90,15 @@ export class UserService {
       password: existing.password,
     });
 
-    return this.userRepository.update(updated);
+    const saved = await this.userRepository.update(updated);
+    this.log.info(
+      {
+        userId: id,
+        fields: Object.keys(inputPatch),
+      },
+      "User updated",
+    );
+    return saved;
   }
 
   async findAll(
@@ -103,5 +118,6 @@ export class UserService {
       throw new Error("User not found");
     }
     await this.userRepository.delete(id);
+    this.log.info({ userId: id }, "User deleted");
   }
 }

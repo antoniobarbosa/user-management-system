@@ -1,5 +1,6 @@
 import "dotenv/config";
 import Fastify from "fastify";
+import type { AppLogger } from "@application/logger.js";
 import { UserService } from "@application/user/UserService.js";
 import { SessionService } from "@application/session/SessionService.js";
 import { prisma } from "@infrastructure/database/connection.js";
@@ -8,6 +9,7 @@ import { UserEmailRepository } from "@infrastructure/repositories/UserEmailRepos
 import { SessionRepository } from "@infrastructure/repositories/SessionRepository.js";
 import { UserController } from "@infrastructure/http/controllers/UserController.js";
 import { SessionController } from "@infrastructure/http/controllers/SessionController.js";
+import { buildFastifyLoggerConfig } from "@infrastructure/http/loggerConfig.js";
 import { registerUserRoutes } from "@infrastructure/http/routes/userRoutes.js";
 import { registerSessionRoutes } from "@infrastructure/http/routes/sessionRoutes.js";
 import { registerTestRoutes } from "@infrastructure/http/routes/testRoutes.js";
@@ -16,6 +18,10 @@ import { createAuthMiddleware } from "@infrastructure/http/middlewares/authMiddl
 
 const port = Number(process.env.PORT) || 3001;
 
+const app = Fastify({ logger: buildFastifyLoggerConfig() });
+
+const log = app.log as unknown as AppLogger;
+
 const userRepository = new UserRepository(prisma);
 const userEmailRepository = new UserEmailRepository(prisma);
 const sessionRepository = new SessionRepository(prisma);
@@ -23,12 +29,11 @@ const sessionService = new SessionService(
   sessionRepository,
   userRepository,
   userEmailRepository,
+  log,
 );
-const userService = new UserService(userRepository, sessionService);
+const userService = new UserService(userRepository, sessionService, log);
 const userController = new UserController(userService);
 const sessionController = new SessionController(sessionService);
-
-const app = Fastify({ logger: false });
 
 registerErrorHandler(app);
 
@@ -44,8 +49,8 @@ app.get("/health", async () => ({ status: "ok" }));
 
 try {
   await app.listen({ port, host: "0.0.0.0" });
-  console.log(`Server listening on port ${port}`);
+  app.log.info({ port }, "Server listening");
 } catch (err) {
-  console.error(err);
+  app.log.error({ err }, "Failed to start server");
   process.exit(1);
 }

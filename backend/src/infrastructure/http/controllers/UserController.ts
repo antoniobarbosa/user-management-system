@@ -42,6 +42,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   async createUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    request.log.info({ handler: "createUser" }, "Handling user registration");
     const body = request.body as Record<string, unknown>;
     const input: CreateUserInput = {
       firstName: String(body.firstName ?? ""),
@@ -52,6 +53,10 @@ export class UserController {
     };
 
     const { user, session } = await this.userService.createUser(input);
+    request.log.info(
+      { userId: user.id, sessionId: session?.id ?? null },
+      "User registration response sent",
+    );
     reply.code(201).send({
       user: toUserResponse(user),
       session: session ? toSessionResponse(session) : null,
@@ -90,6 +95,7 @@ export class UserController {
 
   async updateUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { id } = request.params as { id: string };
+    request.log.info({ handler: "updateUser", userId: id }, "Handling user update");
     const body = request.body as Record<string, unknown>;
     const input: UpdateUserInput = {};
 
@@ -112,6 +118,7 @@ export class UserController {
 
   async deleteUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { id } = request.params as { id: string };
+    request.log.info({ handler: "deleteUser", userId: id }, "Handling user deletion");
     await this.userService.deleteUser(id);
     reply.code(204).send();
   }
