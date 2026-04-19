@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
+import { NotFoundError } from "@domain/errors.js";
 import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
 import type { PaginationMeta } from "@domain/shared/buildPaginationMeta.js";
 import type { Session } from "@domain/session/Session.js";
@@ -73,7 +74,7 @@ export class UserService {
   async updateUser(id: string, input: UpdateUserInput): Promise<User> {
     const existing = await this.userRepository.findById(id);
     if (!existing) {
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
 
     UserValidator.validateUpdate(existing, input);
@@ -115,7 +116,7 @@ export class UserService {
   async deleteUser(id: string): Promise<void> {
     const existing = await this.userRepository.findById(id);
     if (!existing) {
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
     await this.userRepository.delete(id);
     this.log.info({ userId: id }, "User deleted");

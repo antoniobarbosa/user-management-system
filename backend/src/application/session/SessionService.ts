@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "@domain/errors.js";
 import type { IUserEmailRepository } from "@domain/repositories/IUserEmailRepository.js";
 import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
 import type { ISessionRepository } from "@domain/repositories/ISessionRepository.js";
@@ -30,7 +35,7 @@ export class SessionService {
     const userEmail = await this.userEmailRepository.findByEmail(emailVo);
     if (!userEmail) {
       this.log.warn({ reason: "unknown_email" }, "Sign-in failed");
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
 
     const user = await this.userRepository.findById(userEmail.userId);
@@ -39,22 +44,22 @@ export class SessionService {
         { reason: "unknown_user", userId: userEmail.userId },
         "Sign-in failed",
       );
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
 
     if (!user.password) {
       this.log.warn({ reason: "missing_password_hash", userId: user.id }, "Sign-in failed");
-      throw new Error("Invalid password");
+      throw new UnauthorizedError("Invalid credentials");
     }
     const passwordOk = await bcrypt.compare(password, user.password);
     if (!passwordOk) {
       this.log.warn({ reason: "invalid_password", userId: user.id }, "Sign-in failed");
-      throw new Error("Invalid password");
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     if (user.status === UserStatus.INACTIVE) {
       this.log.warn({ reason: "inactive_user", userId: user.id }, "Sign-in failed");
-      throw new Error("User is inactive");
+      throw new ValidationError("User is inactive");
     }
 
     return (await this.startSessionForUser(user)).session;
@@ -90,10 +95,10 @@ export class SessionService {
   async terminateSession(id: string): Promise<Session> {
     const session = await this.sessionRepository.findById(id);
     if (!session) {
-      throw new Error("Session not found");
+      throw new NotFoundError("Session not found");
     }
     if (session.terminatedAt != null) {
-      throw new Error("Session already terminated");
+      throw new ValidationError("Session already terminated");
     }
 
     const now = new Date();

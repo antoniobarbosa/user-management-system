@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { ConflictError } from "../errors.js";
 import { UserEmail } from "../email/UserEmail.js";
 import { BaseEntity } from "../shared/BaseEntity.js";
 import { Email } from "../shared/valueObjects/Email.js";
@@ -17,7 +18,7 @@ export class User extends BaseEntity {
 
   addEmail(email: Email, primary = false): UserEmail {
     if (this.emails.some((e) => e.email.equals(email))) {
-      throw new Error("Email already in use");
+      throw new ConflictError("Email already in use");
     }
     if (primary) {
       for (const e of this.emails) {

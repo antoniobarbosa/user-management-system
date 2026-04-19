@@ -1,3 +1,9 @@
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "@domain/errors.js";
 import { registerErrorHandler } from "@infrastructure/http/middlewares/errorHandler.js";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { describe, expect, it, vi } from "vitest";
@@ -40,40 +46,46 @@ describe("registerErrorHandler / error handler", () => {
   const errorHandler = captureErrorHandler();
 
   it.each([
-    ["First name is required", 400],
-    ["Last name is required", 400],
-    ["Password is required", 400],
-    ["Password must be at least 6 characters", 400],
-    ["Cannot update first name or last name for an inactive user", 400],
-    ["User is inactive", 400],
-    ["Invalid email format", 400],
-    ["Email already in use", 400],
-  ])("returns 400 for %s", (message, expectedStatus) => {
+    "First name is required",
+    "Last name is required",
+    "Password is required",
+    "Password must be at least 6 characters",
+    "Cannot update first name or last name for an inactive user",
+    "User is inactive",
+    "Invalid email format",
+  ])("returns 400 for ValidationError: %s", (message) => {
     const { reply, status, send } = createMockReply();
-    errorHandler(new Error(message), mockRequest, reply);
-    expect(status).toHaveBeenCalledWith(expectedStatus);
+    errorHandler(new ValidationError(message), mockRequest, reply);
+    expect(status).toHaveBeenCalledWith(400);
     expect(send).toHaveBeenCalledWith({ error: message });
   });
 
-  it.each([
-    ["Unauthorized", 401],
-    ["Invalid password", 401],
-  ])("returns 401 for %s", (message, expectedStatus) => {
+  it("returns 409 for ConflictError", () => {
     const { reply, status, send } = createMockReply();
-    errorHandler(new Error(message), mockRequest, reply);
-    expect(status).toHaveBeenCalledWith(expectedStatus);
-    expect(send).toHaveBeenCalledWith({ error: message });
+    errorHandler(new ConflictError("Email already in use"), mockRequest, reply);
+    expect(status).toHaveBeenCalledWith(409);
+    expect(send).toHaveBeenCalledWith({ error: "Email already in use" });
   });
 
-  it.each([
-    ["User not found", 404],
-    ["Session not found", 404],
-  ])("returns 404 for %s", (message, expectedStatus) => {
-    const { reply, status, send } = createMockReply();
-    errorHandler(new Error(message), mockRequest, reply);
-    expect(status).toHaveBeenCalledWith(expectedStatus);
-    expect(send).toHaveBeenCalledWith({ error: message });
-  });
+  it.each(["Unauthorized", "Invalid credentials"])(
+    "returns 401 for UnauthorizedError: %s",
+    (message) => {
+      const { reply, status, send } = createMockReply();
+      errorHandler(new UnauthorizedError(message), mockRequest, reply);
+      expect(status).toHaveBeenCalledWith(401);
+      expect(send).toHaveBeenCalledWith({ error: message });
+    },
+  );
+
+  it.each(["User not found", "Session not found"])(
+    "returns 404 for NotFoundError: %s",
+    (message) => {
+      const { reply, status, send } = createMockReply();
+      errorHandler(new NotFoundError(message), mockRequest, reply);
+      expect(status).toHaveBeenCalledWith(404);
+      expect(send).toHaveBeenCalledWith({ error: message });
+    },
+  );
 
   it("returns 500 for unexpected errors (generic message)", () => {
     const { reply, status, send } = createMockReply();

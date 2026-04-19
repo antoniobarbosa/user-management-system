@@ -1,3 +1,5 @@
+import { ValidationError } from "../../errors.js";
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export class Email {
@@ -6,11 +8,11 @@ export class Email {
   constructor(raw: string) {
     const trimmed = raw.trim();
     if (!trimmed) {
-      throw new Error("Email is required");
+      throw new ValidationError("Email is required");
     }
     const normalized = trimmed.toLowerCase();
     if (!EMAIL_PATTERN.test(normalized)) {
-      throw new Error("Invalid email format");
+      throw new ValidationError("Invalid email format");
     }
     this.value = normalized;
   }

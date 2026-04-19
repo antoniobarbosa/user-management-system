@@ -1,47 +1,21 @@
 import { Prisma } from "@prisma/client";
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "@domain/errors.js";
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-
-const NOT_FOUND_MESSAGES = new Set([
-  "User not found",
-  "Session not found",
-  "Resource not found",
-]);
-
-const UNAUTHORIZED_MESSAGES = new Set(["Unauthorized", "Invalid password"]);
-
-const BAD_REQUEST_MESSAGES = new Set([
-  "First name is required",
-  "Last name is required",
-  "Password is required",
-  "Password must be at least 6 characters",
-  "Cannot update first name or last name for an inactive user",
-  "User is inactive",
-  "Session already terminated",
-  "User password is required for persistence",
-  "Invalid page",
-  "Invalid limit",
-  "Invalid status",
-  "Invalid email format",
-  "Email is required",
-  "Email already in use",
-]);
-
-function isBadRequestMessage(message: string): boolean {
-  if (BAD_REQUEST_MESSAGES.has(message)) return true;
-  return message.startsWith("Invalid user status in database:");
-}
-
-function isNotFoundMessage(message: string): boolean {
-  return NOT_FOUND_MESSAGES.has(message);
-}
-
-function isUnauthorizedMessage(message: string): boolean {
-  return UNAUTHORIZED_MESSAGES.has(message);
-}
 
 function isPrismaNotFound(err: unknown): boolean {
   return (
     err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025"
+  );
+}
+
+function isPrismaUniqueViolation(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002"
   );
 }
 
@@ -63,18 +37,24 @@ function resolveStatusAndMessage(err: unknown): { statusCode: number; message: s
     return { statusCode: 404, message: "Resource not found" };
   }
 
-  const message = err instanceof Error ? err.message : "Internal server error";
-
-  if (isUnauthorizedMessage(message)) {
-    return { statusCode: 401, message };
+  if (isPrismaUniqueViolation(err)) {
+    return { statusCode: 409, message: "Email already in use" };
   }
 
-  if (isNotFoundMessage(message)) {
-    return { statusCode: 404, message };
+  if (err instanceof ConflictError) {
+    return { statusCode: 409, message: err.message };
   }
 
-  if (isBadRequestMessage(message)) {
-    return { statusCode: 400, message };
+  if (err instanceof ValidationError) {
+    return { statusCode: 400, message: err.message };
+  }
+
+  if (err instanceof UnauthorizedError) {
+    return { statusCode: 401, message: err.message };
+  }
+
+  if (err instanceof NotFoundError) {
+    return { statusCode: 404, message: err.message };
   }
 
   return { statusCode: 500, message: "Internal server error" };
