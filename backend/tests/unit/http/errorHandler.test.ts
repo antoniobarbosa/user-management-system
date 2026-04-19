@@ -47,6 +47,7 @@ describe("registerErrorHandler / error handler", () => {
     ["Cannot update first name or last name for an inactive user", 400],
     ["User is inactive", 400],
     ["Invalid email format", 400],
+    ["Email already in use", 400],
   ])("returns 400 for %s", (message, expectedStatus) => {
     const { reply, status, send } = createMockReply();
     errorHandler(new Error(message), mockRequest, reply);

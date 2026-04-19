@@ -14,4 +14,4 @@ Monorepo with backend (Node.js + Express + Prisma) and frontend (Next.js).
 
 ## Quick start
 
-*(Skeleton — documentation to be completed.)*
+_(Skeleton — documentation to be completed.)_

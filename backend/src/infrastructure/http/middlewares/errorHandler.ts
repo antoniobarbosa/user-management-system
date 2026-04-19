@@ -24,6 +24,7 @@ const BAD_REQUEST_MESSAGES = new Set([
   "Invalid status",
   "Invalid email format",
   "Email is required",
+  "Email already in use",
 ]);
 
 function isBadRequestMessage(message: string): boolean {

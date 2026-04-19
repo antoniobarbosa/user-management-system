@@ -3,7 +3,6 @@ import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { UserService } from "@application/user/UserService.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MockUserEmailRepositoryBuilder } from "../../builders/MockUserEmailRepositoryBuilder.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 
 describe("UserService.createUser", () => {
@@ -14,8 +13,7 @@ describe("UserService.createUser", () => {
   function userServiceWith(
     userRepo: ReturnType<MockUserRepositoryBuilder["build"]>,
   ) {
-    const emailRepo = new MockUserEmailRepositoryBuilder().build();
-    return { service: new UserService(userRepo, emailRepo), emailRepo };
+    return new UserService(userRepo);
   }
 
   it("sets createdAt and updatedAt to now", async () => {
@@ -24,9 +22,9 @@ describe("UserService.createUser", () => {
     vi.setSystemTime(fixedNow);
 
     const mockRepo = new MockUserRepositoryBuilder()
-      .withCreate(async (user: User) => ({ ...user }))
+      .withCreate(async (user: User) => user.duplicate())
       .build();
-    const { service } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     const result = await service.createUser({
       firstName: "Jane",
@@ -43,9 +41,9 @@ describe("UserService.createUser", () => {
 
   it("sets status to ACTIVE if not provided", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
-      .withCreate(async (user: User) => ({ ...user }))
+      .withCreate(async (user: User) => user.duplicate())
       .build();
-    const { service } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     const result = await service.createUser({
       firstName: "Jane",
@@ -59,9 +57,9 @@ describe("UserService.createUser", () => {
 
   it("sets loginsCounter to 0", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
-      .withCreate(async (user: User) => ({ ...user }))
+      .withCreate(async (user: User) => user.duplicate())
       .build();
-    const { service } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     const result = await service.createUser({
       firstName: "Jane",
@@ -76,9 +74,9 @@ describe("UserService.createUser", () => {
   it("hashes password with bcrypt (hash ≠ plaintext and compare succeeds)", async () => {
     const plaintext = "myPassword1";
     const mockRepo = new MockUserRepositoryBuilder()
-      .withCreate(async (user: User) => ({ ...user }))
+      .withCreate(async (user: User) => user.duplicate())
       .build();
-    const { service } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     const result = await service.createUser({
       firstName: "Jane",
@@ -94,7 +92,7 @@ describe("UserService.createUser", () => {
 
   it("delegates validation to UserValidator", async () => {
     const mockRepo = new MockUserRepositoryBuilder().build();
-    const { service, emailRepo } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     await expect(
       service.createUser({
@@ -106,14 +104,13 @@ describe("UserService.createUser", () => {
     ).rejects.toThrow();
 
     expect(mockRepo.create).not.toHaveBeenCalled();
-    expect(emailRepo.create).not.toHaveBeenCalled();
   });
 
   it("rejects invalid email format via Email value object", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
-      .withCreate(async (user: User) => ({ ...user }))
+      .withCreate(async (user: User) => user.duplicate())
       .build();
-    const { service, emailRepo } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     await expect(
       service.createUser({
@@ -125,14 +122,13 @@ describe("UserService.createUser", () => {
     ).rejects.toThrow("Invalid email format");
 
     expect(mockRepo.create).not.toHaveBeenCalled();
-    expect(emailRepo.create).not.toHaveBeenCalled();
   });
 
-  it("persists UserEmail after user is created", async () => {
+  it("passes user aggregate with primary email to repository.create", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
-      .withCreate(async (user: User) => ({ ...user }))
+      .withCreate(async (user: User) => user.duplicate())
       .build();
-    const { service, emailRepo } = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo);
 
     const result = await service.createUser({
       firstName: "Jane",
@@ -141,10 +137,11 @@ describe("UserService.createUser", () => {
       password: "secret12",
     });
 
-    expect(emailRepo.create).toHaveBeenCalledTimes(1);
-    const saved = emailRepo.create.mock.calls[0][0];
-    expect(saved.userId).toBe(result.id);
-    expect(saved.primary).toBe(true);
-    expect(saved.email.toString()).toBe("jane@example.com");
+    expect(mockRepo.create).toHaveBeenCalledTimes(1);
+    const passed = mockRepo.create.mock.calls[0][0];
+    expect(passed.allEmails).toHaveLength(1);
+    expect(passed.allEmails[0].primary).toBe(true);
+    expect(passed.allEmails[0].email.toString()).toBe("jane@example.com");
+    expect(passed.allEmails[0].userId).toBe(result.id);
   });
 });

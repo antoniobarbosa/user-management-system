@@ -2,7 +2,6 @@ import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { UserService } from "@application/user/UserService.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { emptyUserEmailRepository } from "../../builders/MockUserEmailRepositoryBuilder.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
 
@@ -15,7 +14,7 @@ describe("UserService.updateUser", () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => null)
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     await expect(
       service.updateUser("missing-id", { firstName: "Nope" }),
@@ -29,7 +28,7 @@ describe("UserService.updateUser", () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => inactive)
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     await expect(
       service.updateUser(inactive.id, { firstName: "Changed" }),
@@ -46,9 +45,9 @@ describe("UserService.updateUser", () => {
       .build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => existing)
-      .withUpdate(async (user: User) => ({ ...user }))
+      .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
@@ -68,9 +67,9 @@ describe("UserService.updateUser", () => {
     const existing = UserBuilder.aUser().withUpdatedAt(t0).build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => existing)
-      .withUpdate(async (user: User) => ({ ...user }))
+      .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     vi.useFakeTimers();
     vi.setSystemTime(t1);
@@ -91,9 +90,9 @@ describe("UserService.updateUser", () => {
       .build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => existing)
-      .withUpdate(async (user: User) => ({ ...user }))
+      .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     const result = await service.updateUser(existing.id, {
       firstName: "NewFirst",
@@ -110,9 +109,9 @@ describe("UserService.updateUser", () => {
       .build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => existing)
-      .withUpdate(async (user: User) => ({ ...user }))
+      .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     const result = await service.updateUser(existing.id, {
       lastName: "NewLast",
@@ -126,9 +125,9 @@ describe("UserService.updateUser", () => {
     const inactive = UserBuilder.anInactiveUser().build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => inactive)
-      .withUpdate(async (user: User) => ({ ...user }))
+      .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     const result = await service.updateUser(inactive.id, {
       status: UserStatus.ACTIVE,
@@ -142,9 +141,9 @@ describe("UserService.updateUser", () => {
     const inactive = UserBuilder.anInactiveUser().withLoginsCounter(2).build();
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => inactive)
-      .withUpdate(async (user: User) => ({ ...user }))
+      .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo, emptyUserEmailRepository());
+    const service = new UserService(mockRepo);
 
     const result = await service.updateUser(inactive.id, {
       loginsCounter: 99,
