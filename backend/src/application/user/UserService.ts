@@ -1,9 +1,7 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
-import type {
-  IUserRepository,
-  PaginatedUsersMeta,
-} from "@domain/repositories/IUserRepository.js";
+import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
+import type { PaginationMeta } from "@domain/shared/buildPaginationMeta.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { UserValidator } from "./UserValidator.js";
@@ -69,7 +67,7 @@ export class UserService {
   async findAll(
     page: number,
     limit: number,
-  ): Promise<{ data: User[]; meta: PaginatedUsersMeta }> {
+  ): Promise<{ data: User[]; meta: PaginationMeta }> {
     return this.userRepository.findAll(page, limit);
   }
 

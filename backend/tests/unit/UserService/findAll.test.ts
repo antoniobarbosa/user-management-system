@@ -1,25 +1,9 @@
 import type { User } from "@domain/user/User.js";
-import type { PaginatedUsersMeta } from "@domain/repositories/IUserRepository.js";
+import { buildPaginationMeta } from "@domain/shared/buildPaginationMeta.js";
 import { UserService } from "@application/user/UserService.js";
 import { describe, expect, it } from "vitest";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
-
-function paginationMeta(
-  total: number,
-  page: number,
-  limit: number,
-): PaginatedUsersMeta {
-  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
-  return {
-    total,
-    page,
-    limit,
-    totalPages,
-    hasNext: totalPages > 0 && page < totalPages,
-    hasPrev: page > 1,
-  };
-}
 
 describe("UserService.findAll", () => {
   it("returns paginated list with correct total", async () => {
@@ -31,7 +15,7 @@ describe("UserService.findAll", () => {
         const start = (page - 1) * limit;
         return {
           data: users.slice(start, start + limit),
-          meta: paginationMeta(users.length, page, limit),
+          meta: buildPaginationMeta(users.length, page, limit),
         };
       })
       .build();
@@ -56,7 +40,7 @@ describe("UserService.findAll", () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindAll(async (_page, limit) => ({
         data: [],
-        meta: paginationMeta(0, 1, limit),
+        meta: buildPaginationMeta(0, 1, limit),
       }))
       .build();
 
@@ -85,7 +69,7 @@ describe("UserService.findAll", () => {
         const start = (page - 1) * limit;
         return {
           data: users.slice(start, start + limit),
-          meta: paginationMeta(users.length, page, limit),
+          meta: buildPaginationMeta(users.length, page, limit),
         };
       })
       .build();

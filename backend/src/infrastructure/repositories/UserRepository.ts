@@ -1,8 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import type {
-  IUserRepository,
-  PaginatedUsersMeta,
-} from "@domain/repositories/IUserRepository.js";
+import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
+import {
+  buildPaginationMeta,
+  type PaginationMeta,
+} from "@domain/shared/buildPaginationMeta.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { prisma } from "@infrastructure/database/connection.js";
@@ -22,22 +23,6 @@ function mapStatus(value: string): UserStatus {
   if (value === UserStatus.ACTIVE) return UserStatus.ACTIVE;
   if (value === UserStatus.INACTIVE) return UserStatus.INACTIVE;
   throw new Error(`Invalid user status in database: ${value}`);
-}
-
-function buildPaginationMeta(
-  total: number,
-  page: number,
-  limit: number,
-): PaginatedUsersMeta {
-  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
-  return {
-    total,
-    page,
-    limit,
-    totalPages,
-    hasNext: totalPages > 0 && page < totalPages,
-    hasPrev: page > 1,
-  };
 }
 
 function toDomain(row: UserRow): User {
@@ -80,7 +65,7 @@ export class UserRepository implements IUserRepository {
   async findAll(
     page: number,
     limit: number,
-  ): Promise<{ data: User[]; meta: PaginatedUsersMeta }> {
+  ): Promise<{ data: User[]; meta: PaginationMeta }> {
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         skip: (page - 1) * limit,
