@@ -189,7 +189,7 @@ function DashboardPagination({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-1">
+    <div className="flex flex-wrap items-center justify-center gap-1" data-testid="user-pagination">
       <button
         type="button"
         disabled={!hasPrev}
@@ -535,7 +535,10 @@ function DashboardContent() {
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
+            <table
+              className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700"
+              data-testid="user-table"
+            >
               <thead className="bg-slate-50 dark:bg-slate-800/80">
                 <tr>
                   <th className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">First name</th>
@@ -561,7 +564,10 @@ function DashboardContent() {
                   </tr>
                 ) : (
                   list.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60">
+                    <tr
+                      key={u.id}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60"
+                    >
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{u.firstName}</td>
                       <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{u.lastName}</td>
                       <td className="px-4 py-3">
@@ -618,6 +624,7 @@ function DashboardContent() {
           <div
             role="dialog"
             aria-modal="true"
+            data-testid="create-user-modal"
             className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
           >
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">New user</h3>
@@ -629,8 +636,14 @@ function DashboardContent() {
                 </div>
               ) : null}
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">First name</label>
+                <label
+                  htmlFor="dashboard-create-first-name"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  First name
+                </label>
                 <input
+                  id="dashboard-create-first-name"
                   value={cFirst}
                   onChange={(e) => setCFirst(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
@@ -638,8 +651,14 @@ function DashboardContent() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Last name</label>
+                <label
+                  htmlFor="dashboard-create-last-name"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Last name
+                </label>
                 <input
+                  id="dashboard-create-last-name"
                   value={cLast}
                   onChange={(e) => setCLast(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
@@ -647,8 +666,14 @@ function DashboardContent() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+                <label
+                  htmlFor="dashboard-create-email"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Email
+                </label>
                 <input
+                  id="dashboard-create-email"
                   type="email"
                   value={cEmail}
                   onChange={(e) => setCEmail(e.target.value)}
@@ -657,10 +682,14 @@ function DashboardContent() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="dashboard-create-password"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Password
                 </label>
                 <input
+                  id="dashboard-create-password"
                   type="password"
                   value={cPassword}
                   onChange={(e) => setCPassword(e.target.value)}
@@ -669,8 +698,14 @@ function DashboardContent() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
+                <label
+                  htmlFor="dashboard-create-status"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Status
+                </label>
                 <select
+                  id="dashboard-create-status"
                   value={cStatus}
                   onChange={(e) => setCStatus(e.target.value as UserStatus)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
@@ -706,6 +741,7 @@ function DashboardContent() {
           <div
             role="dialog"
             aria-modal="true"
+            data-testid="edit-user-modal"
             className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
           >
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Edit user</h3>
@@ -719,7 +755,10 @@ function DashboardContent() {
                 </div>
               ) : null}
               {editUser.status === "inactive" ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+                <div
+                  role="note"
+                  className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100"
+                >
                   <p className="font-medium text-amber-900 dark:text-amber-200">First and last name locked</p>
                   <p className="mt-1 text-amber-900/90 dark:text-amber-100/90">
                     While the account is <strong>inactive</strong>, the server does not accept changes to
@@ -730,7 +769,11 @@ function DashboardContent() {
                 </div>
               ) : null}
               {editUser.status === "inactive" && eStatus === "inactive" ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div
+                  role="group"
+                  aria-label="Current name (read-only)"
+                  className="grid grid-cols-2 gap-3"
+                >
                   <div>
                     <span className="mb-1 block text-sm font-medium text-slate-500 dark:text-slate-400">First name</span>
                     <p className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
@@ -747,16 +790,28 @@ function DashboardContent() {
               ) : (
                 <>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">First name</label>
+                    <label
+                      htmlFor="dashboard-edit-first-name"
+                      className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      First name
+                    </label>
                     <input
+                      id="dashboard-edit-first-name"
                       value={eFirst}
                       onChange={(e) => setEFirst(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Last name</label>
+                    <label
+                      htmlFor="dashboard-edit-last-name"
+                      className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      Last name
+                    </label>
                     <input
+                      id="dashboard-edit-last-name"
                       value={eLast}
                       onChange={(e) => setELast(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
@@ -765,8 +820,14 @@ function DashboardContent() {
                 </>
               )}
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
+                <label
+                  htmlFor="dashboard-edit-status"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Status
+                </label>
                 <select
+                  id="dashboard-edit-status"
                   value={eStatus}
                   onChange={(e) => setEStatus(e.target.value as UserStatus)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
@@ -776,10 +837,14 @@ function DashboardContent() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="dashboard-edit-logins"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Login counter
                 </label>
                 <input
+                  id="dashboard-edit-logins"
                   type="number"
                   min={0}
                   step={1}
@@ -815,6 +880,7 @@ function DashboardContent() {
           <div
             role="dialog"
             aria-modal="true"
+            data-testid="delete-user-modal"
             className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
           >
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Delete user</h3>
