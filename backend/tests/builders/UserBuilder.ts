@@ -10,6 +10,7 @@ export class UserBuilder {
   private lastName!: string;
   private status!: UserStatus;
   private loginsCounter!: number;
+  private passwordHash?: string;
 
   private constructor() {}
 
@@ -68,6 +69,12 @@ export class UserBuilder {
     return this;
   }
 
+  /** bcrypt hash armazenado como `user.password` */
+  withPasswordHash(hash: string): this {
+    this.passwordHash = hash;
+    return this;
+  }
+
   build(): User {
     const user = new User();
     user.id = this.id;
@@ -77,6 +84,9 @@ export class UserBuilder {
     user.lastName = this.lastName;
     user.status = this.status;
     user.loginsCounter = this.loginsCounter;
+    if (this.passwordHash !== undefined) {
+      user.password = this.passwordHash;
+    }
     return user;
   }
 }

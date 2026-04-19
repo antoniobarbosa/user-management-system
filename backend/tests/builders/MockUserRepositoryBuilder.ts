@@ -5,6 +5,9 @@ export class MockUserRepositoryBuilder {
   private readonly create = vi.fn<IUserRepository["create"]>();
   private readonly findAll = vi.fn<IUserRepository["findAll"]>();
   private readonly findById = vi.fn<IUserRepository["findById"]>();
+  private readonly findByName = vi
+    .fn<IUserRepository["findByName"]>()
+    .mockResolvedValue(null);
   private readonly update = vi.fn<IUserRepository["update"]>();
   private readonly delete = vi.fn<IUserRepository["delete"]>();
 
@@ -23,6 +26,11 @@ export class MockUserRepositoryBuilder {
     return this;
   }
 
+  withFindByName(implementation: IUserRepository["findByName"]): this {
+    this.findByName.mockImplementation(implementation);
+    return this;
+  }
+
   withUpdate(implementation: IUserRepository["update"]): this {
     this.update.mockImplementation(implementation);
     return this;
@@ -38,6 +46,7 @@ export class MockUserRepositoryBuilder {
       create: this.create,
       findAll: this.findAll,
       findById: this.findById,
+      findByName: this.findByName,
       update: this.update,
       delete: this.delete,
     } as vi.Mocked<IUserRepository>;

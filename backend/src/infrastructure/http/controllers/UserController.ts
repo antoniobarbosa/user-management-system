@@ -35,6 +35,7 @@ export class UserController {
     const input: CreateUserInput = {
       firstName: String(body.firstName ?? ""),
       lastName: String(body.lastName ?? ""),
+      email: String(body.email ?? ""),
       password: String(body.password ?? ""),
       status: parseUserStatus(body.status),
     };

@@ -10,6 +10,9 @@ export class UserValidator {
     if (!input.lastName?.trim()) {
       throw new Error("Last name is required");
     }
+    if (!String(input.email ?? "").trim()) {
+      throw new Error("Email is required");
+    }
     if (!input.password) {
       throw new Error("Password is required");
     }

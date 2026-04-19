@@ -2,6 +2,7 @@ import type { User } from "@domain/user/User.js";
 import { buildPaginationMeta } from "@domain/shared/buildPaginationMeta.js";
 import { UserService } from "@application/user/UserService.js";
 import { describe, expect, it } from "vitest";
+import { emptyUserEmailRepository } from "../../builders/MockUserEmailRepositoryBuilder.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
 
@@ -20,7 +21,7 @@ describe("UserService.findAll", () => {
       })
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, emptyUserEmailRepository());
 
     const result = await service.findAll(1, 10);
 
@@ -44,7 +45,7 @@ describe("UserService.findAll", () => {
       }))
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, emptyUserEmailRepository());
 
     const result = await service.findAll(1, 20);
 
@@ -74,7 +75,7 @@ describe("UserService.findAll", () => {
       })
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, emptyUserEmailRepository());
 
     const result = await service.findAll(2, 10);
 
