@@ -19,6 +19,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${POSTGRES_DB:-usermgmt}
       PORT: ${PORT:-3001}
       CORS_ORIGIN: ${CORS_ORIGIN}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "${PORT:-3001}:${PORT:-3001}"
     depends_on:

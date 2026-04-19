@@ -15,12 +15,17 @@ export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
   async signIn(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    request.log.info({ handler: "signIn", route: "/api/auth/signin" }, "Sign-in request");
     const body = request.body as Record<string, unknown>;
     const email = typeof body.email === "string" ? body.email : "";
     const password =
       typeof body.password === "string" ? body.password : "";
 
     const session = await this.sessionService.signIn(email, password);
+    request.log.info(
+      { sessionId: session.id, userId: session.userId },
+      "Sign-in succeeded",
+    );
     reply.code(201).send(toSessionResponse(session));
   }
 
@@ -28,6 +33,7 @@ export class SessionController {
     request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
+    request.log.info({ handler: "createSession" }, "Session create request");
     const body = request.body as Record<string, unknown>;
     const userId = body.userId;
     if (typeof userId !== "string" || !userId.trim()) {
@@ -35,6 +41,7 @@ export class SessionController {
     }
 
     const session = await this.sessionService.createSession(userId.trim());
+    request.log.info({ sessionId: session.id, userId: session.userId }, "Session create response sent");
     reply.code(201).send(toSessionResponse(session));
   }
 
@@ -43,6 +50,7 @@ export class SessionController {
     reply: FastifyReply,
   ): Promise<void> {
     const { id } = request.params as { id: string };
+    request.log.info({ handler: "terminateSession", sessionId: id }, "Session termination request");
     const session = await this.sessionService.terminateSession(id);
     reply.send(toSessionResponse(session));
   }
