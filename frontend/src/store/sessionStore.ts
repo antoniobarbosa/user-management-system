@@ -16,7 +16,7 @@ export type SessionUser = {
   lastName: string;
 };
 
-/** Autenticado: `useSessionStore((s) => s.sessionId !== null)`. */
+/** Authenticated when `useSessionStore((s) => s.sessionId !== null)`. */
 type SessionStore = {
   sessionId: string | null;
   user: SessionUser | null;
@@ -58,8 +58,8 @@ export const useSessionStore = create<SessionStore>()(
 );
 
 /**
- * Só fica `true` após o efeito no cliente — nunca no SSR.
- * Evita mismatch de hydration (servidor vs primeiro paint do cliente).
+ * Becomes `true` only after the client effect runs — never during SSR.
+ * Avoids hydration mismatches between server and the client’s first paint.
  */
 export function useSessionStoreHydrated(): boolean {
   const [hydrated, setHydrated] = useState(false);
