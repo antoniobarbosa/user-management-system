@@ -7,46 +7,67 @@ describe("UserValidator.validateCreate", () => {
     {
       firstName: "",
       lastName: "Doe",
+      email: "jane@example.com",
       password: "secret12",
       error: "First name is required",
     },
     {
       firstName: "   ",
       lastName: "Doe",
+      email: "jane@example.com",
       password: "secret12",
       error: "First name is required",
     },
     {
       firstName: "Jane",
       lastName: "",
+      email: "jane@example.com",
       password: "secret12",
       error: "Last name is required",
     },
     {
       firstName: "Jane",
       lastName: "  \t ",
+      email: "jane@example.com",
       password: "secret12",
       error: "Last name is required",
     },
     {
       firstName: "Jane",
       lastName: "Doe",
+      email: "",
+      password: "secret12",
+      error: "Email is required",
+    },
+    {
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "   ",
+      password: "secret12",
+      error: "Email is required",
+    },
+    {
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane@example.com",
       password: "",
       error: "Password is required",
     },
     {
       firstName: "Jane",
       lastName: "Doe",
+      email: "jane@example.com",
       password: "12345",
       error: "Password must be at least 6 characters",
     },
   ] as const)(
     "throws $error",
-    ({ firstName, lastName, password, error }) => {
+    ({ firstName, lastName, email, password, error }) => {
       expect(() =>
         UserValidator.validateCreate({
           firstName,
           lastName,
+          email,
           password,
         } as CreateUserInput),
       ).toThrow(error);
@@ -58,6 +79,7 @@ describe("UserValidator.validateCreate", () => {
       UserValidator.validateCreate({
         firstName: "Jane",
         lastName: "Doe",
+        email: "jane@example.com",
         password: "secret12",
       }),
     ).not.toThrow();

@@ -4,27 +4,36 @@ import { UserService } from "@application/user/UserService.js";
 import { SessionService } from "@application/session/SessionService.js";
 import { prisma } from "@infrastructure/database/connection.js";
 import { UserRepository } from "@infrastructure/repositories/UserRepository.js";
+import { UserEmailRepository } from "@infrastructure/repositories/UserEmailRepository.js";
 import { SessionRepository } from "@infrastructure/repositories/SessionRepository.js";
 import { UserController } from "@infrastructure/http/controllers/UserController.js";
 import { SessionController } from "@infrastructure/http/controllers/SessionController.js";
 import { registerUserRoutes } from "@infrastructure/http/routes/userRoutes.js";
 import { registerSessionRoutes } from "@infrastructure/http/routes/sessionRoutes.js";
 import { registerErrorHandler } from "@infrastructure/http/middlewares/errorHandler.js";
+import { createAuthMiddleware } from "@infrastructure/http/middlewares/authMiddleware.js";
 
 const port = Number(process.env.PORT) || 3001;
 
 const userRepository = new UserRepository(prisma);
+const userEmailRepository = new UserEmailRepository(prisma);
 const sessionRepository = new SessionRepository(prisma);
-const userService = new UserService(userRepository);
-const sessionService = new SessionService(sessionRepository, userRepository);
+const userService = new UserService(userRepository, userEmailRepository);
+const sessionService = new SessionService(
+  sessionRepository,
+  userRepository,
+  userEmailRepository,
+);
 const userController = new UserController(userService);
 const sessionController = new SessionController(sessionService);
 
 const app = Fastify({ logger: false });
 
 registerErrorHandler(app);
-registerUserRoutes(app, userController);
-registerSessionRoutes(app, sessionController);
+
+const authPreHandler = createAuthMiddleware(sessionRepository);
+registerUserRoutes(app, userController, authPreHandler);
+registerSessionRoutes(app, sessionController, authPreHandler);
 
 app.get("/health", async () => ({ status: "ok" }));
 

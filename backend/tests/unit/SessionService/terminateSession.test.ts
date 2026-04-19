@@ -1,5 +1,6 @@
 import { SessionService } from "@application/session/SessionService.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { emptyUserEmailRepository } from "../../builders/MockUserEmailRepositoryBuilder.js";
 import { MockSessionRepositoryBuilder } from "../../builders/MockSessionRepositoryBuilder.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { SessionBuilder } from "../../builders/SessionBuilder.js";
@@ -23,7 +24,11 @@ describe("SessionService.terminateSession", () => {
       .withFindById(async () => session)
       .withTerminate(async () => undefined)
       .build();
-    const service = new SessionService(mockSessionRepo, emptyUserRepository());
+    const service = new SessionService(
+      mockSessionRepo,
+      emptyUserRepository(),
+      emptyUserEmailRepository(),
+    );
 
     const result = await service.terminateSession(session.id);
 
@@ -43,7 +48,11 @@ describe("SessionService.terminateSession", () => {
       .withFindById(async () => session)
       .withTerminate(async () => undefined)
       .build();
-    const service = new SessionService(mockSessionRepo, emptyUserRepository());
+    const service = new SessionService(
+      mockSessionRepo,
+      emptyUserRepository(),
+      emptyUserEmailRepository(),
+    );
 
     const result = await service.terminateSession(session.id);
 
@@ -61,7 +70,11 @@ describe("SessionService.terminateSession", () => {
     const mockSessionRepo = new MockSessionRepositoryBuilder()
       .withFindById(async () => null)
       .build();
-    const service = new SessionService(mockSessionRepo, emptyUserRepository());
+    const service = new SessionService(
+      mockSessionRepo,
+      emptyUserRepository(),
+      emptyUserEmailRepository(),
+    );
 
     await expect(
       service.terminateSession("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
@@ -73,7 +86,11 @@ describe("SessionService.terminateSession", () => {
     const mockSessionRepo = new MockSessionRepositoryBuilder()
       .withFindById(async () => session)
       .build();
-    const service = new SessionService(mockSessionRepo, emptyUserRepository());
+    const service = new SessionService(
+      mockSessionRepo,
+      emptyUserRepository(),
+      emptyUserEmailRepository(),
+    );
 
     await expect(service.terminateSession(session.id)).rejects.toThrow(
       "Session already terminated",

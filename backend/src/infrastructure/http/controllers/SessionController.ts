@@ -14,6 +14,16 @@ function toSessionResponse(session: Session) {
 export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
+  async signIn(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const body = request.body as Record<string, unknown>;
+    const email = typeof body.email === "string" ? body.email : "";
+    const password =
+      typeof body.password === "string" ? body.password : "";
+
+    const session = await this.sessionService.signIn(email, password);
+    reply.code(201).send(toSessionResponse(session));
+  }
+
   async createSession(
     request: FastifyRequest,
     reply: FastifyReply,

@@ -8,15 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String      @id
   firstName     String
   lastName      String
   password      String
   status        String
-  loginsCounter Int       @default(0)
+  loginsCounter Int         @default(0)
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
+  emails        UserEmail[]
+}
+
+model UserEmail {
+  id        String   @id
+  userId    String
+  email     String   @unique
+  primary   Boolean  @default(true)
+  createdAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Session {

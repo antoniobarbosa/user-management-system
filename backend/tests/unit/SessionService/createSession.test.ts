@@ -2,6 +2,7 @@ import { SessionService } from "@application/session/SessionService.js";
 import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { emptyUserEmailRepository } from "../../builders/MockUserEmailRepositoryBuilder.js";
 import { MockSessionRepositoryBuilder } from "../../builders/MockSessionRepositoryBuilder.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
@@ -31,7 +32,11 @@ describe("SessionService.createSession", () => {
     const mockUserRepo = userRepositoryWithFind(async (id) =>
       id === user.id ? user : null,
     );
-    const service = new SessionService(mockSessionRepo, mockUserRepo);
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
 
     const result = await service.createSession(user.id);
 
@@ -48,7 +53,11 @@ describe("SessionService.createSession", () => {
     const mockUserRepo = userRepositoryWithFind(async (id) =>
       id === user.id ? user : null,
     );
-    const service = new SessionService(mockSessionRepo, mockUserRepo);
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
 
     const result = await service.createSession(user.id);
 
@@ -64,7 +73,11 @@ describe("SessionService.createSession", () => {
     const mockUserRepo = userRepositoryWithFind(async (id) =>
       id === user.id ? user : null,
     );
-    const service = new SessionService(mockSessionRepo, mockUserRepo);
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
 
     const result = await service.createSession(user.id);
 
@@ -84,7 +97,11 @@ describe("SessionService.createSession", () => {
         return updated;
       })
       .build();
-    const service = new SessionService(mockSessionRepo, mockUserRepo);
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
 
     const first = await service.createSession(user.id);
     const second = await service.createSession(user.id);
@@ -98,7 +115,11 @@ describe("SessionService.createSession", () => {
     const mockUserRepo = userRepositoryWithFind(async (id) =>
       id === inactiveUser.id ? inactiveUser : null,
     );
-    const service = new SessionService(mockSessionRepo, mockUserRepo);
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
 
     await expect(service.createSession(inactiveUser.id)).rejects.toThrow();
 
@@ -115,7 +136,11 @@ describe("SessionService.createSession", () => {
       .withFindById(async (id: string) => (id === user.id ? user : null))
       .withUpdate(async (u: User) => u)
       .build();
-    const service = new SessionService(mockSessionRepo, mockUserRepo);
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
 
     await service.createSession(user.id);
 

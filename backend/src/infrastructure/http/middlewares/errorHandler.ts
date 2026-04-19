@@ -7,6 +7,8 @@ const NOT_FOUND_MESSAGES = new Set([
   "Resource not found",
 ]);
 
+const UNAUTHORIZED_MESSAGES = new Set(["Unauthorized", "Invalid password"]);
+
 const BAD_REQUEST_MESSAGES = new Set([
   "First name is required",
   "Last name is required",
@@ -20,6 +22,8 @@ const BAD_REQUEST_MESSAGES = new Set([
   "Invalid page",
   "Invalid limit",
   "Invalid status",
+  "Invalid email format",
+  "Email is required",
 ]);
 
 function isBadRequestMessage(message: string): boolean {
@@ -29,6 +33,10 @@ function isBadRequestMessage(message: string): boolean {
 
 function isNotFoundMessage(message: string): boolean {
   return NOT_FOUND_MESSAGES.has(message);
+}
+
+function isUnauthorizedMessage(message: string): boolean {
+  return UNAUTHORIZED_MESSAGES.has(message);
 }
 
 function isPrismaNotFound(err: unknown): boolean {
@@ -56,6 +64,10 @@ function resolveStatusAndMessage(err: unknown): { statusCode: number; message: s
   }
 
   const message = err instanceof Error ? err.message : "Internal server error";
+
+  if (isUnauthorizedMessage(message)) {
+    return { statusCode: 401, message };
+  }
 
   if (isNotFoundMessage(message)) {
     return { statusCode: 404, message };
