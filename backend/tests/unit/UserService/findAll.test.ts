@@ -1,4 +1,5 @@
 import type { User } from "@domain/user/User.js";
+import { buildPaginationMeta } from "@domain/shared/buildPaginationMeta.js";
 import { UserService } from "@application/user/UserService.js";
 import { describe, expect, it } from "vitest";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
@@ -14,7 +15,7 @@ describe("UserService.findAll", () => {
         const start = (page - 1) * limit;
         return {
           data: users.slice(start, start + limit),
-          total: users.length,
+          meta: buildPaginationMeta(users.length, page, limit),
         };
       })
       .build();
@@ -24,13 +25,23 @@ describe("UserService.findAll", () => {
     const result = await service.findAll(1, 10);
 
     expect(mockRepo.findAll).toHaveBeenCalledWith(1, 10);
-    expect(result.total).toBe(25);
+    expect(result.meta.total).toBe(25);
+    expect(result.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      totalPages: 3,
+      hasNext: true,
+      hasPrev: false,
+    });
     expect(result.data).toHaveLength(10);
   });
 
   it("returns empty list if no users exist", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
-      .withFindAll(async () => ({ data: [], total: 0 }))
+      .withFindAll(async (_page, limit) => ({
+        data: [],
+        meta: buildPaginationMeta(0, 1, limit),
+      }))
       .build();
 
     const service = new UserService(mockRepo);
@@ -38,7 +49,14 @@ describe("UserService.findAll", () => {
     const result = await service.findAll(1, 20);
 
     expect(result.data).toEqual([]);
-    expect(result.total).toBe(0);
+    expect(result.meta.total).toBe(0);
+    expect(result.meta).toMatchObject({
+      page: 1,
+      limit: 20,
+      totalPages: 0,
+      hasNext: false,
+      hasPrev: false,
+    });
     expect(mockRepo.findAll).toHaveBeenCalledWith(1, 20);
   });
 
@@ -51,7 +69,7 @@ describe("UserService.findAll", () => {
         const start = (page - 1) * limit;
         return {
           data: users.slice(start, start + limit),
-          total: users.length,
+          meta: buildPaginationMeta(users.length, page, limit),
         };
       })
       .build();
@@ -61,6 +79,13 @@ describe("UserService.findAll", () => {
     const result = await service.findAll(2, 10);
 
     expect(result.data).toHaveLength(10);
+    expect(result.meta).toMatchObject({
+      page: 2,
+      limit: 10,
+      totalPages: 3,
+      hasNext: true,
+      hasPrev: true,
+    });
     expect(result.data.map((u) => u.firstName)).toEqual(
       users.slice(10, 20).map((u) => u.firstName),
     );

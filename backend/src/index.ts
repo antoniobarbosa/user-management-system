@@ -1,15 +1,37 @@
 import "dotenv/config";
-import express from "express";
+import Fastify from "fastify";
+import { UserService } from "@application/user/UserService.js";
+import { SessionService } from "@application/session/SessionService.js";
+import { prisma } from "@infrastructure/database/connection.js";
+import { UserRepository } from "@infrastructure/repositories/UserRepository.js";
+import { SessionRepository } from "@infrastructure/repositories/SessionRepository.js";
+import { UserController } from "@infrastructure/http/controllers/UserController.js";
+import { SessionController } from "@infrastructure/http/controllers/SessionController.js";
+import { registerUserRoutes } from "@infrastructure/http/routes/userRoutes.js";
+import { registerSessionRoutes } from "@infrastructure/http/routes/sessionRoutes.js";
+import { registerErrorHandler } from "@infrastructure/http/middlewares/errorHandler.js";
 
-const app = express();
 const port = Number(process.env.PORT) || 3001;
 
-app.use(express.json());
+const userRepository = new UserRepository(prisma);
+const sessionRepository = new SessionRepository(prisma);
+const userService = new UserService(userRepository);
+const sessionService = new SessionService(sessionRepository, userRepository);
+const userController = new UserController(userService);
+const sessionController = new SessionController(sessionService);
 
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
+const app = Fastify({ logger: false });
 
-app.listen(port, () => {
+registerErrorHandler(app);
+registerUserRoutes(app, userController);
+registerSessionRoutes(app, sessionController);
+
+app.get("/health", async () => ({ status: "ok" }));
+
+try {
+  await app.listen({ port, host: "0.0.0.0" });
   console.log(`Server listening on port ${port}`);
-});
+} catch (err) {
+  console.error(err);
+  process.exit(1);
+}
