@@ -10,9 +10,6 @@ export function registerSessionRoutes(
   authPreHandler: preHandlerHookHandler,
 ): void {
   app.post("/api/auth/signin", (req, reply) => controller.signIn(req, reply));
-  app.post("/api/sessions", (req, reply) =>
-    controller.createSession(req, reply),
-  );
   app.delete(
     "/api/sessions/:id",
     { preHandler: authPreHandler },

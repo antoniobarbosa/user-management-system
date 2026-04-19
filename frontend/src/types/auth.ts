@@ -4,6 +4,7 @@ export type User = {
   id: string;
   firstName: string;
   lastName: string;
+  primaryEmail?: string;
   status: UserStatus;
   loginsCounter: number;
   createdAt: string;

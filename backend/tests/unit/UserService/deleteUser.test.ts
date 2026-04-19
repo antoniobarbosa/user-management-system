@@ -1,5 +1,6 @@
 import { UserService } from "@application/user/UserService.js";
 import { describe, expect, it } from "vitest";
+import { unusedSessionService } from "../../fixtures/sessionServiceStub.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
 
@@ -11,7 +12,7 @@ describe("UserService.deleteUser", () => {
       .withDelete(async () => {})
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     await service.deleteUser(user.id);
 
@@ -23,7 +24,7 @@ describe("UserService.deleteUser", () => {
       .withFindById(async () => null)
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     await expect(service.deleteUser("missing-id")).rejects.toThrow(
       "User not found",

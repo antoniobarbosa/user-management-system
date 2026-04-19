@@ -1,5 +1,5 @@
 import { apiFetch } from "@/services/api";
-import type { User, UserStatus } from "@/types/auth";
+import type { Session, User, UserStatus } from "@/types/auth";
 
 export type PaginationMeta = {
   total: number;
@@ -36,8 +36,13 @@ export type CreateUserInput = {
   status?: UserStatus;
 };
 
-export async function createUser(data: CreateUserInput): Promise<User> {
-  return apiFetch<User>("/api/users", {
+export type CreateUserResult = {
+  user: User;
+  session: Session | null;
+};
+
+export async function createUser(data: CreateUserInput): Promise<CreateUserResult> {
+  return apiFetch<CreateUserResult>("/api/users", {
     method: "POST",
     body: JSON.stringify(data),
   });

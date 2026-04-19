@@ -25,13 +25,13 @@ const log = app.log as unknown as AppLogger;
 const userRepository = new UserRepository(prisma);
 const userEmailRepository = new UserEmailRepository(prisma);
 const sessionRepository = new SessionRepository(prisma);
-const userService = new UserService(userRepository, log);
 const sessionService = new SessionService(
   sessionRepository,
   userRepository,
   userEmailRepository,
   log,
 );
+const userService = new UserService(userRepository, sessionService, log);
 const userController = new UserController(userService);
 const sessionController = new SessionController(sessionService);
 

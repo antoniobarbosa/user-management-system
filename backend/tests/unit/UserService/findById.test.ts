@@ -1,5 +1,6 @@
 import { UserService } from "@application/user/UserService.js";
 import { describe, expect, it } from "vitest";
+import { unusedSessionService } from "../../fixtures/sessionServiceStub.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
 
@@ -10,7 +11,7 @@ describe("UserService.findById", () => {
       .withFindById(async (id) => (id === user.id ? user : null))
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     const result = await service.findById(user.id);
 
@@ -23,7 +24,7 @@ describe("UserService.findById", () => {
       .withFindById(async () => null)
       .build();
 
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     const result = await service.findById("unknown-id");
 

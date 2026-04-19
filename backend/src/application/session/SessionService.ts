@@ -11,6 +11,11 @@ import type { AppLogger } from "../logger.js";
 import { noopLogger } from "../logger.js";
 import { SessionValidator } from "./SessionValidator.js";
 
+export type StartSessionResult = {
+  session: Session;
+  user: User;
+};
+
 export class SessionService {
   constructor(
     private readonly sessionRepository: ISessionRepository,
@@ -52,39 +57,34 @@ export class SessionService {
       throw new Error("User is inactive");
     }
 
-    return this.startSessionForUser(user);
+    return (await this.startSessionForUser(user)).session;
   }
 
-  async createSession(userId: string): Promise<Session> {
-    this.log.info({ userId, event: "session_create_request" }, "Creating session");
-    const user = await this.userRepository.findById(userId);
+  async startSessionForUser(user: User): Promise<StartSessionResult> {
     SessionValidator.validateCreate(user);
-    return this.startSessionForUser(user);
-  }
 
-  private async startSessionForUser(user: User): Promise<Session> {
     const now = new Date();
-    const session = new Session();
-    session.id = randomUUID();
-    session.userId = user.id;
-    session.createdAt = now;
-    session.terminatedAt = null;
+    const sessionEntity = new Session();
+    sessionEntity.id = randomUUID();
+    sessionEntity.userId = user.id;
+    sessionEntity.createdAt = now;
+    sessionEntity.terminatedAt = null;
 
     const updatedUser = user.duplicate();
     updatedUser.loginsCounter = user.loginsCounter + 1;
     updatedUser.updatedAt = now;
-    await this.userRepository.update(updatedUser);
+    const savedUser = await this.userRepository.update(updatedUser);
 
-    const created = await this.sessionRepository.create(session);
+    const session = await this.sessionRepository.create(sessionEntity);
     this.log.info(
       {
         userId: user.id,
-        sessionId: created.id,
+        sessionId: session.id,
         event: "session_created",
       },
       "Session created",
     );
-    return created;
+    return { session, user: savedUser };
   }
 
   async terminateSession(id: string): Promise<Session> {
