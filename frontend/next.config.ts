@@ -6,7 +6,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  outputFileTracingRoot: path.join(__dirname, ".."),
+  /** Use app dir so Docker builds (context = ./frontend) match local standalone tracing. */
+  outputFileTracingRoot: __dirname,
   async rewrites() {
     const apiUrl = process.env.API_URL?.trim();
     if (!apiUrl) {
