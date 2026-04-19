@@ -23,8 +23,8 @@ export default function Home() {
   }, [isAuthenticated, isHydrated, mounted, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <p className="text-sm text-slate-500">Redirecting…</p>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <p className="text-sm text-slate-500 dark:text-slate-400">Redirecting…</p>
     </div>
   );
 }

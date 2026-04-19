@@ -86,28 +86,28 @@ export default function AuthPage() {
 
   if (!mounted || !isHydrated || isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-16">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-16 dark:from-slate-950 dark:to-slate-900">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-10 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             User management
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             {mode === "signin"
               ? "Sign in to continue"
               : "Create an account to get started"}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm shadow-slate-200/60">
-          <div className="mb-6 flex rounded-lg bg-slate-100 p-1">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm shadow-slate-200/60 dark:border-slate-700 dark:bg-slate-900 dark:shadow-slate-950/40">
+          <div className="mb-6 flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
             <button
               type="button"
               onClick={() => {
@@ -116,8 +116,8 @@ export default function AuthPage() {
               }}
               className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
                 mode === "signin"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
               }`}
             >
               Sign in
@@ -130,8 +130,8 @@ export default function AuthPage() {
               }}
               className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
                 mode === "signup"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
               }`}
             >
               Sign up
@@ -141,7 +141,7 @@ export default function AuthPage() {
           {error ? (
             <div
               role="alert"
-              className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+              className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
             >
               {error}
             </div>
@@ -150,7 +150,7 @@ export default function AuthPage() {
           {mode === "signin" ? (
             <form onSubmit={handleSignIn} className="space-y-4">
               <div>
-                <label htmlFor="signin-email" className="mb-1 block text-sm font-medium text-slate-700">
+                <label htmlFor="signin-email" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Email
                 </label>
                 <input
@@ -160,12 +160,12 @@ export default function AuthPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                   placeholder="you@company.com"
                 />
               </div>
               <div>
-                <label htmlFor="signin-password" className="mb-1 block text-sm font-medium text-slate-700">
+                <label htmlFor="signin-password" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Password
                 </label>
                 <input
@@ -175,13 +175,13 @@ export default function AuthPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition focus:border-slate-300 focus:ring-2"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-slate-400 transition focus:border-slate-300 focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                 />
               </div>
               <button
                 type="submit"
                 disabled={pending}
-                className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 {pending ? "Signing in…" : "Sign in"}
               </button>
@@ -190,7 +190,7 @@ export default function AuthPage() {
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="su-fn" className="mb-1 block text-sm font-medium text-slate-700">
+                  <label htmlFor="su-fn" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     First name
                   </label>
                   <input
@@ -200,11 +200,11 @@ export default function AuthPage() {
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                   />
                 </div>
                 <div>
-                  <label htmlFor="su-ln" className="mb-1 block text-sm font-medium text-slate-700">
+                  <label htmlFor="su-ln" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Last name
                   </label>
                   <input
@@ -214,12 +214,12 @@ export default function AuthPage() {
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                   />
                 </div>
               </div>
               <div>
-                <label htmlFor="su-email" className="mb-1 block text-sm font-medium text-slate-700">
+                <label htmlFor="su-email" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Email
                 </label>
                 <input
@@ -229,12 +229,12 @@ export default function AuthPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                   placeholder="you@company.com"
                 />
               </div>
               <div>
-                <label htmlFor="su-pw" className="mb-1 block text-sm font-medium text-slate-700">
+                <label htmlFor="su-pw" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Password
                 </label>
                 <input
@@ -244,11 +244,11 @@ export default function AuthPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                 />
               </div>
               <div>
-                <label htmlFor="su-pw2" className="mb-1 block text-sm font-medium text-slate-700">
+                <label htmlFor="su-pw2" className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Confirm password
                 </label>
                 <input
@@ -258,13 +258,13 @@ export default function AuthPage() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-600"
                 />
               </div>
               <button
                 type="submit"
                 disabled={pending}
-                className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 {pending ? "Creating account…" : "Create account"}
               </button>
@@ -272,8 +272,11 @@ export default function AuthPage() {
           )}
         </div>
 
-        <p className="mt-8 text-center text-sm text-slate-500">
-          <Link href="/" className="font-medium text-slate-700 underline-offset-4 hover:underline">
+        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          <Link
+            href="/"
+            className="font-medium text-slate-700 underline-offset-4 hover:underline dark:text-slate-300"
+          >
             Back to home
           </Link>
         </p>
