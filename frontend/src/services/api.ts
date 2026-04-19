@@ -1,7 +1,4 @@
-import {
-  clearPersistedSessionAndCookie,
-  readSessionIdFromPersistedStore,
-} from "@/lib/session-storage";
+import { useSessionStore } from "@/store/sessionStore";
 
 export class ApiError extends Error {
   constructor(
@@ -19,21 +16,18 @@ function resolveUrl(path: string): string {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-function getSessionIdForRequest(): string | null {
-  if (typeof window === "undefined") return null;
-  return readSessionIdFromPersistedStore();
+function handleUnauthorizedResponse(): void {
+  if (typeof window === "undefined") return;
+  useSessionStore.getState().clearSession();
+  if (window.location.pathname !== "/auth") {
+    window.location.href = "/auth";
+  }
 }
 
 export type ApiFetchOptions = RequestInit & {
-  /** Do not send the `x-session-id` header. */
+  /** Omit `x-session-id` (e.g. sign-in / sign-up before a session exists in the store). */
   skipSessionHeader?: boolean;
 };
-
-function handleUnauthorizedResponse(): void {
-  if (typeof window === "undefined") return;
-  clearPersistedSessionAndCookie();
-  window.location.href = "/auth";
-}
 
 export async function apiFetch<T>(
   path: string,
@@ -42,17 +36,20 @@ export async function apiFetch<T>(
   const { skipSessionHeader, headers: initHeaders, ...rest } = init;
   const headers = new Headers(initHeaders);
 
-  if (!skipSessionHeader) {
-    const sid = getSessionIdForRequest();
-    if (sid) headers.set("x-session-id", sid);
-  }
-
   if (!headers.has("Content-Type") && rest.body != null) {
     headers.set("Content-Type", "application/json");
   }
 
+  if (!skipSessionHeader) {
+    const sessionId = useSessionStore.getState().sessionId?.trim();
+    if (sessionId) {
+      headers.set("x-session-id", sessionId);
+    }
+  }
+
   const response = await fetch(resolveUrl(path), {
     ...rest,
+    credentials: "include",
     headers,
   });
 
@@ -82,4 +79,3 @@ export async function apiFetch<T>(
 
   return json as T;
 }
-

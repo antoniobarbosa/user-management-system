@@ -49,7 +49,7 @@ The backend is organised in three layers:
 - **User as aggregate root** with owned **UserEmail** records (primary email and uniqueness enforced at the persistence layer).
 - **Email** modelled as a **value object** in the domain where validation and invariants apply.
 - **Repository pattern** so application code depends on interfaces; Prisma stays in infrastructure.
-- **Session-based auth**: the client sends **`x-session-id`** on API requests; the backend resolves the session and user.
+- **Session-based auth**: the browser stores the session id in an **HttpOnly cookie** (same-site requests use **`credentials: 'include'`**); the backend reads **`Cookie`** first, then optional **`x-session-id`** for API clients.
 - **Next.js rewrites** (`/api/*` → `API_URL/api/*`) so the browser talks to the same origin as the app, **avoiding CORS** for normal browser usage. The backend can still enforce **`CORS_ORIGIN`** for direct API access.
 
 ## Getting Started
@@ -147,18 +147,22 @@ Configure GitHub **secrets**: `DROPLET_HOST`, `DROPLET_USER`, `DROPLET_SSH_KEY`.
 
 ## API Endpoints
 
-Base path: **`/api`** (and **`/health`**). Protected routes expect header **`x-session-id: <session-id>`** unless noted.
+Base path: **`/api`** (and **`/health`**).
+
+**Session (browser):** successful **`POST /api/users`** (sign-up, when no session cookie is already present) and **`POST /api/auth/signin`** set an **HttpOnly** session cookie (`__Host-session` in production with **Secure**; plain `session` in local dev over HTTP). The SPA sends **`credentials: 'include'`** so the cookie is attached automatically. The **`x-session-id`** header is still accepted as a fallback for non-browser API clients.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/health` | No | Health check. |
-| `POST` | `/api/users` | No | Register a new user (sign-up). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created); otherwise `session.id` is the client session identifier. |
-| `POST` | `/api/auth/signin` | No | Sign in with email and password; returns a new session. |
+| `POST` | `/api/users` | No | Register a new user (sign-up). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created). A session **cookie** is set only when a new session is created **and** the request did not already carry a session cookie (so operators are not logged out). |
+| `POST` | `/api/auth/signin` | No | Sign in with email and password; returns session JSON and sets the session **cookie**. |
+| `GET` | `/api/users/me` | Yes | Returns the authenticated user (from session cookie or `x-session-id`). |
 | `GET` | `/api/users` | Yes | List users. Query: **`page`** (default `1`), **`limit`** (default `6`). Response includes `data` and `meta` (pagination). |
 | `GET` | `/api/users/:id` | Yes | Get a single user by id. |
 | `PATCH` | `/api/users/:id` | Yes | Update user fields (name, status, login counter, etc.). |
 | `DELETE` | `/api/users/:id` | Yes | Delete a user. |
-| `DELETE` | `/api/sessions/:id` | Yes | Terminate (invalidate) a session. |
+| `DELETE` | `/api/sessions/current` | Yes | Terminate the **current** session (from cookie / header) and clear the session cookie. |
+| `DELETE` | `/api/sessions/:id` | Yes | Terminate a session by id; clears the cookie when it matches the current session. |
 | `DELETE` | `/api/test/cleanup` | No* | Deletes all users whose email ends with `@e2e.test`. **Only registered when `NODE_ENV=test`.** |
 
 \*Intended for automated e2e cleanup, not for production.
