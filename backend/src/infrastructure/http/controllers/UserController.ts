@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import type {
@@ -17,6 +18,15 @@ function toUserResponse(user: User) {
     loginsCounter: user.loginsCounter,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+  };
+}
+
+function toSessionResponse(session: Session) {
+  return {
+    id: session.id,
+    userId: session.userId,
+    createdAt: session.createdAt,
+    terminatedAt: session.terminatedAt,
   };
 }
 
@@ -41,8 +51,11 @@ export class UserController {
       status: parseUserStatus(body.status),
     };
 
-    const user = await this.userService.createUser(input);
-    reply.code(201).send(toUserResponse(user));
+    const { user, session } = await this.userService.createUser(input);
+    reply.code(201).send({
+      user: toUserResponse(user),
+      session: session ? toSessionResponse(session) : null,
+    });
   }
 
   async findAll(request: FastifyRequest, reply: FastifyReply): Promise<void> {

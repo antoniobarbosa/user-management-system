@@ -74,8 +74,17 @@ export default function AuthPage() {
     }
     setPending(true);
     try {
-      await authService.signUp(firstName, lastName, email, password);
-      await establishSession(email, password);
+      const { user, session } = await authService.signUp(
+        firstName,
+        lastName,
+        email,
+        password,
+      );
+      useSessionStore.getState().setSession(session.id, {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      });
       router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create account.");

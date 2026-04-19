@@ -9,6 +9,11 @@ import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { SessionValidator } from "./SessionValidator.js";
 
+export type StartSessionResult = {
+  session: Session;
+  user: User;
+};
+
 export class SessionService {
   constructor(
     private readonly sessionRepository: ISessionRepository,
@@ -40,29 +45,26 @@ export class SessionService {
       throw new Error("User is inactive");
     }
 
-    return this.startSessionForUser(user);
+    return (await this.startSessionForUser(user)).session;
   }
 
-  async createSession(userId: string): Promise<Session> {
-    const user = await this.userRepository.findById(userId);
+  async startSessionForUser(user: User): Promise<StartSessionResult> {
     SessionValidator.validateCreate(user);
-    return this.startSessionForUser(user);
-  }
 
-  private async startSessionForUser(user: User): Promise<Session> {
     const now = new Date();
-    const session = new Session();
-    session.id = randomUUID();
-    session.userId = user.id;
-    session.createdAt = now;
-    session.terminatedAt = null;
+    const sessionEntity = new Session();
+    sessionEntity.id = randomUUID();
+    sessionEntity.userId = user.id;
+    sessionEntity.createdAt = now;
+    sessionEntity.terminatedAt = null;
 
     const updatedUser = user.duplicate();
     updatedUser.loginsCounter = user.loginsCounter + 1;
     updatedUser.updatedAt = now;
-    await this.userRepository.update(updatedUser);
+    const savedUser = await this.userRepository.update(updatedUser);
 
-    return this.sessionRepository.create(session);
+    const session = await this.sessionRepository.create(sessionEntity);
+    return { session, user: savedUser };
   }
 
   async terminateSession(id: string): Promise<Session> {

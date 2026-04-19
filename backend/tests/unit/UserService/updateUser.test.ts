@@ -2,6 +2,7 @@ import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
 import { UserService } from "@application/user/UserService.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { unusedSessionService } from "../../fixtures/sessionServiceStub.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
 
@@ -14,7 +15,7 @@ describe("UserService.updateUser", () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => null)
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     await expect(
       service.updateUser("missing-id", { firstName: "Nope" }),
@@ -28,7 +29,7 @@ describe("UserService.updateUser", () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withFindById(async () => inactive)
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     await expect(
       service.updateUser(inactive.id, { firstName: "Changed" }),
@@ -47,7 +48,7 @@ describe("UserService.updateUser", () => {
       .withFindById(async () => existing)
       .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
@@ -69,7 +70,7 @@ describe("UserService.updateUser", () => {
       .withFindById(async () => existing)
       .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     vi.useFakeTimers();
     vi.setSystemTime(t1);
@@ -92,7 +93,7 @@ describe("UserService.updateUser", () => {
       .withFindById(async () => existing)
       .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     const result = await service.updateUser(existing.id, {
       firstName: "NewFirst",
@@ -111,7 +112,7 @@ describe("UserService.updateUser", () => {
       .withFindById(async () => existing)
       .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     const result = await service.updateUser(existing.id, {
       lastName: "NewLast",
@@ -127,7 +128,7 @@ describe("UserService.updateUser", () => {
       .withFindById(async () => inactive)
       .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     const result = await service.updateUser(inactive.id, {
       status: UserStatus.ACTIVE,
@@ -143,7 +144,7 @@ describe("UserService.updateUser", () => {
       .withFindById(async () => inactive)
       .withUpdate(async (user: User) => user.duplicate())
       .build();
-    const service = new UserService(mockRepo);
+    const service = new UserService(mockRepo, unusedSessionService());
 
     const result = await service.updateUser(inactive.id, {
       loginsCounter: 99,

@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import type { IUserRepository } from "@domain/repositories/IUserRepository.js";
 import type { PaginationMeta } from "@domain/shared/buildPaginationMeta.js";
+import type { Session } from "@domain/session/Session.js";
 import { Email } from "@domain/shared/valueObjects/Email.js";
 import { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
+import { SessionService } from "@application/session/SessionService.js";
 import { UserValidator } from "./UserValidator.js";
 
 export type CreateUserInput = {
@@ -22,10 +24,18 @@ export type UpdateUserInput = {
   loginsCounter?: number;
 };
 
-export class UserService {
-  constructor(private readonly userRepository: IUserRepository) {}
+export type CreateUserResult = {
+  user: User;
+  session: Session | null;
+};
 
-  async createUser(input: CreateUserInput): Promise<User> {
+export class UserService {
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly sessionService: SessionService,
+  ) {}
+
+  async createUser(input: CreateUserInput): Promise<CreateUserResult> {
     UserValidator.validateCreate(input);
     const now = new Date();
     const passwordHash = await bcrypt.hash(input.password, 10);
@@ -42,7 +52,15 @@ export class UserService {
 
     user.addEmail(new Email(input.email), true);
 
-    return this.userRepository.create(user);
+    const created = await this.userRepository.create(user);
+
+    if (created.status !== UserStatus.ACTIVE) {
+      return { user: created, session: null };
+    }
+
+    const { session, user: userWithSession } =
+      await this.sessionService.startSessionForUser(created);
+    return { user: userWithSession, session };
   }
 
   async updateUser(id: string, input: UpdateUserInput): Promise<User> {

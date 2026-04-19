@@ -18,7 +18,6 @@ const BAD_REQUEST_MESSAGES = new Set([
   "User is inactive",
   "Session already terminated",
   "User password is required for persistence",
-  "userId is required",
   "Invalid page",
   "Invalid limit",
   "Invalid status",

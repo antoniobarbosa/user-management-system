@@ -152,9 +152,8 @@ Base path: **`/api`** (and **`/health`**). Protected routes expect header **`x-s
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/health` | No | Health check. |
-| `POST` | `/api/users` | No | Register a new user (sign-up). |
+| `POST` | `/api/users` | No | Register a new user (sign-up). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created); otherwise `session.id` is the client session identifier. |
 | `POST` | `/api/auth/signin` | No | Sign in with email and password; returns a new session. |
-| `POST` | `/api/sessions` | No | Create a session for a given `userId` (used after sign-up). |
 | `GET` | `/api/users` | Yes | List users. Query: **`page`** (default `1`), **`limit`** (default `6`). Response includes `data` and `meta` (pagination). |
 | `GET` | `/api/users/:id` | Yes | Get a single user by id. |
 | `PATCH` | `/api/users/:id` | Yes | Update user fields (name, status, login counter, etc.). |

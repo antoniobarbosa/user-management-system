@@ -7,15 +7,7 @@ import { MockSessionRepositoryBuilder } from "../../builders/MockSessionReposito
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 import { UserBuilder } from "../../builders/UserBuilder.js";
 
-function userRepositoryWithFind(
-  getUser: (id: string) => Promise<User | null>,
-): ReturnType<MockUserRepositoryBuilder["build"]> {
-  return new MockUserRepositoryBuilder()
-    .withFindById((id: string) => getUser(id))
-    .build();
-}
-
-describe("SessionService.createSession", () => {
+describe("SessionService.startSessionForUser", () => {
   beforeEach(() => {
     vi.useRealTimers();
   });
@@ -29,16 +21,16 @@ describe("SessionService.createSession", () => {
     const mockSessionRepo = new MockSessionRepositoryBuilder()
       .withCreate(async (session: Session) => ({ ...session }))
       .build();
-    const mockUserRepo = userRepositoryWithFind(async (id) =>
-      id === user.id ? user : null,
-    );
+    const mockUserRepo = new MockUserRepositoryBuilder()
+      .withUpdate(async (u: User) => u)
+      .build();
     const service = new SessionService(
       mockSessionRepo,
       mockUserRepo,
       emptyUserEmailRepository(),
     );
 
-    const result = await service.createSession(user.id);
+    const { session: result } = await service.startSessionForUser(user);
 
     expect(result.createdAt).toEqual(fixedNow);
 
@@ -50,16 +42,16 @@ describe("SessionService.createSession", () => {
     const mockSessionRepo = new MockSessionRepositoryBuilder()
       .withCreate(async (session: Session) => ({ ...session }))
       .build();
-    const mockUserRepo = userRepositoryWithFind(async (id) =>
-      id === user.id ? user : null,
-    );
+    const mockUserRepo = new MockUserRepositoryBuilder()
+      .withUpdate(async (u: User) => u)
+      .build();
     const service = new SessionService(
       mockSessionRepo,
       mockUserRepo,
       emptyUserEmailRepository(),
     );
 
-    const result = await service.createSession(user.id);
+    const { session: result } = await service.startSessionForUser(user);
 
     expect(result.terminatedAt).toBeNull();
   });
@@ -70,70 +62,7 @@ describe("SessionService.createSession", () => {
     const mockSessionRepo = new MockSessionRepositoryBuilder()
       .withCreate(async (session: Session) => ({ ...session }))
       .build();
-    const mockUserRepo = userRepositoryWithFind(async (id) =>
-      id === user.id ? user : null,
-    );
-    const service = new SessionService(
-      mockSessionRepo,
-      mockUserRepo,
-      emptyUserEmailRepository(),
-    );
-
-    const result = await service.createSession(user.id);
-
-    expect(result.userId).toBe(userId);
-  });
-
-  it("generates a unique id", async () => {
-    const user = UserBuilder.aUser().build();
-    let current: User = user;
-    const mockSessionRepo = new MockSessionRepositoryBuilder()
-      .withCreate(async (session: Session) => ({ ...session }))
-      .build();
     const mockUserRepo = new MockUserRepositoryBuilder()
-      .withFindById(async (id: string) => (id === current.id ? current : null))
-      .withUpdate(async (updated: User) => {
-        current = updated;
-        return updated;
-      })
-      .build();
-    const service = new SessionService(
-      mockSessionRepo,
-      mockUserRepo,
-      emptyUserEmailRepository(),
-    );
-
-    const first = await service.createSession(user.id);
-    const second = await service.createSession(user.id);
-
-    expect(first.id).not.toBe(second.id);
-  });
-
-  it("delegates validation to SessionValidator", async () => {
-    const inactiveUser = UserBuilder.anInactiveUser().build();
-    const mockSessionRepo = new MockSessionRepositoryBuilder().build();
-    const mockUserRepo = userRepositoryWithFind(async (id) =>
-      id === inactiveUser.id ? inactiveUser : null,
-    );
-    const service = new SessionService(
-      mockSessionRepo,
-      mockUserRepo,
-      emptyUserEmailRepository(),
-    );
-
-    await expect(service.createSession(inactiveUser.id)).rejects.toThrow();
-
-    expect(mockSessionRepo.create).not.toHaveBeenCalled();
-    expect(mockUserRepo.update).not.toHaveBeenCalled();
-  });
-
-  it("increments user loginsCounter after session is created", async () => {
-    const user = UserBuilder.aUser().withLoginsCounter(4).build();
-    const mockSessionRepo = new MockSessionRepositoryBuilder()
-      .withCreate(async (session: Session) => ({ ...session }))
-      .build();
-    const mockUserRepo = new MockUserRepositoryBuilder()
-      .withFindById(async (id: string) => (id === user.id ? user : null))
       .withUpdate(async (u: User) => u)
       .build();
     const service = new SessionService(
@@ -142,7 +71,62 @@ describe("SessionService.createSession", () => {
       emptyUserEmailRepository(),
     );
 
-    await service.createSession(user.id);
+    const { session: result } = await service.startSessionForUser(user);
+
+    expect(result.userId).toBe(userId);
+  });
+
+  it("generates a unique id per session", async () => {
+    const user = UserBuilder.aUser().build();
+    const mockSessionRepo = new MockSessionRepositoryBuilder()
+      .withCreate(async (session: Session) => ({ ...session }))
+      .build();
+    const mockUserRepo = new MockUserRepositoryBuilder()
+      .withUpdate(async (u: User) => u)
+      .build();
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
+
+    const first = await service.startSessionForUser(user);
+    const second = await service.startSessionForUser(first.user);
+
+    expect(first.session.id).not.toBe(second.session.id);
+  });
+
+  it("rejects inactive users via SessionValidator", async () => {
+    const inactiveUser = UserBuilder.anInactiveUser().build();
+    const mockSessionRepo = new MockSessionRepositoryBuilder().build();
+    const mockUserRepo = new MockUserRepositoryBuilder().build();
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
+
+    await expect(service.startSessionForUser(inactiveUser)).rejects.toThrow();
+
+    expect(mockSessionRepo.create).not.toHaveBeenCalled();
+    expect(mockUserRepo.update).not.toHaveBeenCalled();
+  });
+
+  it("increments user loginsCounter", async () => {
+    const user = UserBuilder.aUser().withLoginsCounter(4).build();
+    const mockSessionRepo = new MockSessionRepositoryBuilder()
+      .withCreate(async (session: Session) => ({ ...session }))
+      .build();
+    const mockUserRepo = new MockUserRepositoryBuilder()
+      .withUpdate(async (u: User) => u)
+      .build();
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
+
+    await service.startSessionForUser(user);
 
     expect(mockUserRepo.update).toHaveBeenCalledTimes(1);
     expect(mockUserRepo.update).toHaveBeenCalledWith(

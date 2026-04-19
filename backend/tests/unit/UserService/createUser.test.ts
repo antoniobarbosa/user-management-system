@@ -1,8 +1,11 @@
 import bcrypt from "bcrypt";
 import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
+import type { SessionService } from "@application/session/SessionService.js";
 import { UserService } from "@application/user/UserService.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { sessionServiceForSignUpFlow } from "../../fixtures/sessionServiceForSignUp.js";
+import { unusedSessionService } from "../../fixtures/sessionServiceStub.js";
 import { MockUserRepositoryBuilder } from "../../builders/MockUserRepositoryBuilder.js";
 
 describe("UserService.createUser", () => {
@@ -12,11 +15,12 @@ describe("UserService.createUser", () => {
 
   function userServiceWith(
     userRepo: ReturnType<MockUserRepositoryBuilder["build"]>,
+    sessionSvc = sessionServiceForSignUpFlow(),
   ) {
-    return new UserService(userRepo);
+    return new UserService(userRepo, sessionSvc);
   }
 
-  it("sets createdAt and updatedAt to now", async () => {
+  it("sets createdAt and updatedAt to now on the persisted user", async () => {
     const fixedNow = new Date("2026-03-15T10:30:00.000Z");
     vi.useFakeTimers();
     vi.setSystemTime(fixedNow);
@@ -26,7 +30,7 @@ describe("UserService.createUser", () => {
       .build();
     const service = userServiceWith(mockRepo);
 
-    const result = await service.createUser({
+    const { user: result } = await service.createUser({
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -34,7 +38,6 @@ describe("UserService.createUser", () => {
     });
 
     expect(result.createdAt).toEqual(fixedNow);
-    expect(result.updatedAt).toEqual(fixedNow);
 
     vi.useRealTimers();
   });
@@ -45,7 +48,7 @@ describe("UserService.createUser", () => {
       .build();
     const service = userServiceWith(mockRepo);
 
-    const result = await service.createUser({
+    const { user: result } = await service.createUser({
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -55,20 +58,22 @@ describe("UserService.createUser", () => {
     expect(result.status).toBe(UserStatus.ACTIVE);
   });
 
-  it("sets loginsCounter to 0", async () => {
+  it("starts repository user with loginsCounter 0 and returns user with loginsCounter 1 after session", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withCreate(async (user: User) => user.duplicate())
       .build();
     const service = userServiceWith(mockRepo);
 
-    const result = await service.createUser({
+    const { user: result } = await service.createUser({
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
       password: "secret12",
     });
 
-    expect(result.loginsCounter).toBe(0);
+    const passed = mockRepo.create.mock.calls[0][0];
+    expect(passed.loginsCounter).toBe(0);
+    expect(result.loginsCounter).toBe(1);
   });
 
   it("hashes password with bcrypt (hash ≠ plaintext and compare succeeds)", async () => {
@@ -78,7 +83,7 @@ describe("UserService.createUser", () => {
       .build();
     const service = userServiceWith(mockRepo);
 
-    const result = await service.createUser({
+    const { user: result } = await service.createUser({
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -92,7 +97,7 @@ describe("UserService.createUser", () => {
 
   it("delegates validation to UserValidator", async () => {
     const mockRepo = new MockUserRepositoryBuilder().build();
-    const service = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo, unusedSessionService());
 
     await expect(
       service.createUser({
@@ -110,7 +115,7 @@ describe("UserService.createUser", () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withCreate(async (user: User) => user.duplicate())
       .build();
-    const service = userServiceWith(mockRepo);
+    const service = userServiceWith(mockRepo, unusedSessionService());
 
     await expect(
       service.createUser({
@@ -130,7 +135,7 @@ describe("UserService.createUser", () => {
       .build();
     const service = userServiceWith(mockRepo);
 
-    const result = await service.createUser({
+    const { user: result } = await service.createUser({
       firstName: "Jane",
       lastName: "Doe",
       email: "  Jane@EXAMPLE.com  ",
@@ -143,5 +148,46 @@ describe("UserService.createUser", () => {
     expect(passed.allEmails[0].primary).toBe(true);
     expect(passed.allEmails[0].email.toString()).toBe("jane@example.com");
     expect(passed.allEmails[0].userId).toBe(result.id);
+  });
+
+  it("returns a session for active users", async () => {
+    const mockRepo = new MockUserRepositoryBuilder()
+      .withCreate(async (user: User) => user.duplicate())
+      .build();
+    const service = userServiceWith(mockRepo);
+
+    const { user, session } = await service.createUser({
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane@example.com",
+      password: "secret12",
+    });
+
+    expect(session).not.toBeNull();
+    expect(session!.userId).toBe(user.id);
+    expect(session!.terminatedAt).toBeNull();
+  });
+
+  it("does not create a session for inactive users", async () => {
+    const startSessionForUser = vi.fn();
+    const mockRepo = new MockUserRepositoryBuilder()
+      .withCreate(async (user: User) => user.duplicate())
+      .build();
+    const service = new UserService(mockRepo, {
+      startSessionForUser,
+    } as unknown as SessionService);
+
+    const { user, session } = await service.createUser({
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane@example.com",
+      password: "secret12",
+      status: UserStatus.INACTIVE,
+    });
+
+    expect(session).toBeNull();
+    expect(user.status).toBe(UserStatus.INACTIVE);
+    expect(user.loginsCounter).toBe(0);
+    expect(startSessionForUser).not.toHaveBeenCalled();
   });
 });

@@ -24,20 +24,6 @@ export class SessionController {
     reply.code(201).send(toSessionResponse(session));
   }
 
-  async createSession(
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> {
-    const body = request.body as Record<string, unknown>;
-    const userId = body.userId;
-    if (typeof userId !== "string" || !userId.trim()) {
-      throw new Error("userId is required");
-    }
-
-    const session = await this.sessionService.createSession(userId.trim());
-    reply.code(201).send(toSessionResponse(session));
-  }
-
   async terminateSession(
     request: FastifyRequest,
     reply: FastifyReply,
