@@ -14,8 +14,8 @@ export function createAuthMiddleware(
     const rawHeader = request.headers["x-session-id"];
     const headerVal = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
-    // Preferir o header: o SPA envia o id da sessão atual na store; um cookie HttpOnly
-    // antigo (ex.: após sign-up com cookie stale) não deve sobrepor esse valor.
+    // Prefer the header: the SPA sends the current session id from its store, and a
+    // stale HttpOnly cookie (e.g. after sign-up) should not override that value.
     const sessionId =
       typeof headerVal === "string" && headerVal.trim()
         ? headerVal.trim()

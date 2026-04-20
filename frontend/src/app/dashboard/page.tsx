@@ -306,14 +306,9 @@ function DashboardContent() {
     if (!mounted || !isHydrated) return;
     const { sessionId: sid, user } = useSessionStore.getState();
     if (!sid?.trim() && !user?.id) {
-      console.log("[dashboard] sem sessionId nem user na store → /auth");
       router.replace("/auth");
       return;
     }
-    console.log("[dashboard] carregar dados", {
-      temSessionId: Boolean(sid?.trim()),
-      temUserId: Boolean(user?.id),
-    });
     void (async () => {
       try {
         const me = await authService.getMe();
@@ -322,8 +317,7 @@ function DashboardContent() {
           firstName: me.firstName,
           lastName: me.lastName,
         });
-      } catch (err) {
-        console.log("[dashboard] getMe falhou", err);
+      } catch {
         useSessionStore.getState().clearSession();
         router.replace("/auth");
         return;

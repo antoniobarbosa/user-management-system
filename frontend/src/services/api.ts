@@ -16,15 +16,6 @@ function resolveUrl(path: string): string {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-function isAuthRelatedApiPath(path: string): boolean {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  return (
-    p.startsWith("/api/users") ||
-    p.startsWith("/api/auth") ||
-    p.startsWith("/api/sessions")
-  );
-}
-
 function handleUnauthorizedResponse(): void {
   if (typeof window === "undefined") return;
   useSessionStore.getState().clearSession();
@@ -64,24 +55,12 @@ export async function apiFetch<T>(
   }
 
   const url = resolveUrl(path);
-  const method = (rest.method ?? "GET").toString().toUpperCase();
-  if (typeof window !== "undefined" && isAuthRelatedApiPath(path)) {
-    console.log("[apiFetch] →", method, url, {
-      skipSessionHeader: Boolean(skipSessionHeader),
-      suppressAuthRedirect: Boolean(suppressAuthRedirect),
-      xSessionId: headers.has("x-session-id"),
-    });
-  }
 
   const response = await fetch(url, {
     ...rest,
     credentials: "include",
     headers,
   });
-
-  if (typeof window !== "undefined" && isAuthRelatedApiPath(path)) {
-    console.log("[apiFetch] ←", method, url, response.status, response.statusText);
-  }
 
   const text = await response.text();
   let json: unknown = undefined;

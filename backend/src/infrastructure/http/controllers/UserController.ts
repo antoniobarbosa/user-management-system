@@ -82,7 +82,7 @@ export class UserController {
           previous.terminatedAt == null &&
           previous.userId !== session.userId
         ) {
-          // Operador autenticado a criar outro utilizador: não substituir o cookie dele.
+          // Authenticated operator creating another user: do not overwrite their cookie.
           shouldAttachCookie = false;
         }
       }

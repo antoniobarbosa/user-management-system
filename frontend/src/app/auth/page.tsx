@@ -15,17 +15,13 @@ type Mode = "signin" | "signup";
 type ServerSessionProbe = "pending" | "none" | "present";
 
 async function establishSession(email: string, password: string) {
-  console.log("[auth/establishSession] 1) signIn");
   const session = await authService.signIn(email, password);
-  console.log("[auth/establishSession] 2) setSession na store", { sessionId: session.id });
   useSessionStore.getState().setSession(session.id, {
     id: session.userId,
     firstName: "",
     lastName: "",
   });
-  console.log("[auth/establishSession] 3) getMe");
   const user = await authService.getMe();
-  console.log("[auth/establishSession] 4) setUser na store", { userId: user.id });
   useSessionStore.getState().setUser({
     id: user.id,
     firstName: user.firstName,
@@ -64,18 +60,15 @@ export default function AuthPage() {
     }
     let cancelled = false;
     setServerSession("pending");
-    console.log("[auth/probe] sessão existente na store → getMe (redirect se OK)");
     void authService
       .getMe()
       .then(() => {
         if (cancelled) return;
-        console.log("[auth/probe] getMe OK → /dashboard");
         setServerSession("present");
         router.replace("/dashboard");
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return;
-        console.log("[auth/probe] getMe falhou, clearSession", err);
         useSessionStore.getState().clearSession();
         setServerSession("none");
       });
@@ -88,13 +81,10 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     setPending(true);
-    console.log("[auth/handleSignIn] submit", { email });
     try {
       await establishSession(email, password);
-      console.log("[auth/handleSignIn] router.replace(/dashboard)");
       router.replace("/dashboard");
     } catch (err) {
-      console.log("[auth/handleSignIn] erro", err);
       setError(err instanceof ApiError ? err.message : "Could not sign in.");
     } finally {
       setPending(false);
@@ -105,12 +95,10 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     if (password !== confirmPassword) {
-      console.log("[auth/handleSignUp] passwords não coincidem");
       setError("Passwords do not match.");
       return;
     }
     setPending(true);
-    console.log("[auth/handleSignUp] submit", { email, firstName, lastName });
     try {
       const { user, session } = await authService.signUp(
         firstName,
@@ -118,19 +106,13 @@ export default function AuthPage() {
         email,
         password,
       );
-      console.log("[auth/handleSignUp] signUp OK → setSession", {
-        userId: user.id,
-        sessionId: session.id,
-      });
       useSessionStore.getState().setSession(session.id, {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
       });
-      console.log("[auth/handleSignUp] router.replace(/dashboard)");
       router.replace("/dashboard");
     } catch (err) {
-      console.log("[auth/handleSignUp] erro", err);
       setError(err instanceof ApiError ? err.message : "Could not create account.");
     } finally {
       setPending(false);

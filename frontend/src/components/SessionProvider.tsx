@@ -26,48 +26,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (!storeHydrated) {
-      console.log("[SessionProvider] aguardando hidratação da store");
-      return;
-    }
-
-    const { sessionId: sidBefore } = useSessionStore.getState();
-    console.log("[SessionProvider] verificando sessão, sessionId?", Boolean(sidBefore?.trim()));
+    if (!storeHydrated) return;
 
     let cancelled = false;
 
     void (async () => {
       try {
         const user = await authService.getMe({ suppressAuthRedirect: true });
-        if (cancelled) {
-          console.log("[SessionProvider] getMe cancelado (unmount)");
-          return;
-        }
+        if (cancelled) return;
         redirectedRef.current = false;
         useSessionStore.getState().setUser({
           id: user.id,
           firstName: user.firstName,
           lastName: user.lastName,
         });
-        console.log("[SessionProvider] getMe OK, userId:", user.id);
       } catch (e: unknown) {
         if (cancelled) return;
         const status = httpStatusOf(e);
-        console.log("[SessionProvider] getMe falhou", { status, e });
         if (status === 401) {
           if (!redirectedRef.current) {
             redirectedRef.current = true;
             useSessionStore.getState().clearSession();
-            console.log("[SessionProvider] 401 → router.replace(/auth)");
             router.replace("/auth");
-          } else {
-            console.log("[SessionProvider] 401 ignorado (redirect já disparado)");
           }
           return;
         }
       } finally {
         if (!cancelled) {
-          console.log("[SessionProvider] check concluído, checked=true");
           setChecked(true);
         }
       }

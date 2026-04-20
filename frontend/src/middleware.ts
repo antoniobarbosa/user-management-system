@@ -9,18 +9,16 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/dashboard")) {
     if (!hasSession) {
-      console.log("[middleware] /dashboard sem cookie → /auth", SESSION_COOKIE_NAME);
       return NextResponse.redirect(new URL("/auth", request.url));
     }
-    console.log("[middleware] /dashboard com cookie → next");
     return NextResponse.next();
   }
 
   if (pathname === "/auth") {
-    // Não redireccionar para /dashboard só porque existe cookie: o cookie pode estar
-    // inválido (DB reset, sessão revogada). HttpOnly não é limpo por clearSession() no cliente.
-    // O SessionProvider + página /auth validam com getMe e redireccionam quando apropriado.
-    console.log("[middleware] /auth → next (sem auto-redirect por cookie)");
+    // Do not auto-redirect to /dashboard just because a cookie is present: the cookie may
+    // be invalid (DB reset, session revoked) and `HttpOnly` means clearSession() on the
+    // client cannot clear it. The SessionProvider and the /auth page validate via getMe
+    // and redirect when appropriate.
     return NextResponse.next();
   }
 

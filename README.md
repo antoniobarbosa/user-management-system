@@ -195,6 +195,11 @@ This section lists **conscious tradeoffs** rather than forgotten work. For each 
 - **Email update flow.** The spec covers sign-up, sign-in, list, edit profile fields, and delete — **no change-email use case**. The domain is already prepared for it (`UserEmail` is modelled as a separate aggregate child with `isPrimary`), so adding a verify-then-swap flow is mechanical once the product calls for it.
 - **Frontend component tests (React Testing Library).** E2E already asserts user-visible behaviour; component tests would give faster feedback on presentational logic and would be the next addition as the UI grows.
 
+### UX & Product
+
+- **Global theme selector.** The light/dark/auto preference is persisted in `localStorage` (so the choice survives reloads/re-opens, as the spec requires) and respected across every page via the root `ThemeProvider`. The **picker UI** currently lives only in the dashboard because that is the authenticated surface where an operator actually spends time; the auth and landing pages are transient flows that follow the stored preference (or the OS scheme, via `prefers-color-scheme`) automatically. A small global toggle in the root layout is the natural next step once we want unauthenticated visitors to switch appearance without reaching the dashboard.
+- **`loginsCounter` semantics on sign-up.** The spec lists *Logins counter* as a domain field without prescribing when it increments. The chosen interpretation is strict: **`loginsCounter` counts password sign-ins only**, so it stays at `0` after sign-up (and after admin-created users), and `SessionService.startSessionForUser` increments by `+1` only on the `/api/auth/signin` path (see the `incrementLoginCount` flag). The rationale is that the counter becomes a meaningful **credential-use** signal (useful for dormant-account detection and audit) rather than a generic session tally. If the product prefers the looser reading — “first session counts as a login” — flipping `incrementLoginCount` to `true` in `UserService.createUser` is the single-line change needed.
+
 ### Scalability & Operations
 
 - JWT with refresh tokens (if stateless sessions become a requirement across multiple services).
