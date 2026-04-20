@@ -11,9 +11,18 @@ export class ApiError extends Error {
   }
 }
 
-/** Relative to the Next.js origin; `next.config` rewrites `/api/*` to the backend. */
+/** Relative to the Next.js origin; `app/api/[...path]/route.ts` proxies `/api/*` to `API_URL`. */
 function resolveUrl(path: string): string {
   return path.startsWith("/") ? path : `/${path}`;
+}
+
+function isAuthRelatedApiPath(path: string): boolean {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return (
+    p.startsWith("/api/users") ||
+    p.startsWith("/api/auth") ||
+    p.startsWith("/api/sessions")
+  );
 }
 
 function handleUnauthorizedResponse(): void {
@@ -27,13 +36,20 @@ function handleUnauthorizedResponse(): void {
 export type ApiFetchOptions = RequestInit & {
   /** Omit `x-session-id` (e.g. sign-in / sign-up before a session exists in the store). */
   skipSessionHeader?: boolean;
+  /** When true, 401 does not run global clear + navigation (e.g. session bootstrap). */
+  suppressAuthRedirect?: boolean;
 };
 
 export async function apiFetch<T>(
   path: string,
   init: ApiFetchOptions = {},
 ): Promise<T> {
-  const { skipSessionHeader, headers: initHeaders, ...rest } = init;
+  const {
+    skipSessionHeader,
+    suppressAuthRedirect,
+    headers: initHeaders,
+    ...rest
+  } = init;
   const headers = new Headers(initHeaders);
 
   if (!headers.has("Content-Type") && rest.body != null) {
@@ -47,11 +63,25 @@ export async function apiFetch<T>(
     }
   }
 
-  const response = await fetch(resolveUrl(path), {
+  const url = resolveUrl(path);
+  const method = (rest.method ?? "GET").toString().toUpperCase();
+  if (typeof window !== "undefined" && isAuthRelatedApiPath(path)) {
+    console.log("[apiFetch] →", method, url, {
+      skipSessionHeader: Boolean(skipSessionHeader),
+      suppressAuthRedirect: Boolean(suppressAuthRedirect),
+      xSessionId: headers.has("x-session-id"),
+    });
+  }
+
+  const response = await fetch(url, {
     ...rest,
     credentials: "include",
     headers,
   });
+
+  if (typeof window !== "undefined" && isAuthRelatedApiPath(path)) {
+    console.log("[apiFetch] ←", method, url, response.status, response.statusText);
+  }
 
   const text = await response.text();
   let json: unknown = undefined;
@@ -64,7 +94,7 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && !suppressAuthRedirect) {
       handleUnauthorizedResponse();
     }
     const message =

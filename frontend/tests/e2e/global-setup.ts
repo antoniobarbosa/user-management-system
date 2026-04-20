@@ -1,9 +1,12 @@
+/** Test backend only (`backend/.env.test`, port 3002); dev API stays on :3001. */
+const E2E_CLEANUP_BASE = "http://localhost:3002";
+
 async function globalSetup(): Promise<void> {
   const base =
-    process.env.PLAYWRIGHT_BACKEND_URL?.replace(/\/$/, "") ??
-    "http://localhost:3001";
+    process.env.PLAYWRIGHT_BACKEND_URL?.replace(/\/$/, "") ?? E2E_CLEANUP_BASE;
+  const cleanupUrl = `${base}/api/test/cleanup`;
   try {
-    const res = await fetch(`${base}/api/test/cleanup`, { method: "DELETE" });
+    const res = await fetch(cleanupUrl, { method: "DELETE" });
     if (res.status === 404) {
       console.warn(
         "[e2e global-setup] Cleanup route not registered (start backend with NODE_ENV=test to enable).",

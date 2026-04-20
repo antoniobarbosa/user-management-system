@@ -304,10 +304,16 @@ function DashboardContent() {
 
   useEffect(() => {
     if (!mounted || !isHydrated) return;
-    if (!sessionId?.trim()) {
+    const { sessionId: sid, user } = useSessionStore.getState();
+    if (!sid?.trim() && !user?.id) {
+      console.log("[dashboard] sem sessionId nem user na store → /auth");
       router.replace("/auth");
       return;
     }
+    console.log("[dashboard] carregar dados", {
+      temSessionId: Boolean(sid?.trim()),
+      temUserId: Boolean(user?.id),
+    });
     void (async () => {
       try {
         const me = await authService.getMe();
@@ -316,14 +322,15 @@ function DashboardContent() {
           firstName: me.firstName,
           lastName: me.lastName,
         });
-      } catch {
+      } catch (err) {
+        console.log("[dashboard] getMe falhou", err);
         useSessionStore.getState().clearSession();
         router.replace("/auth");
         return;
       }
       await fetchUsersForPage(page);
     })();
-  }, [mounted, isHydrated, page, fetchUsersForPage, router, sessionId]);
+  }, [mounted, isHydrated, page, fetchUsersForPage, router, sessionId, sessionUser?.id]);
 
   function openCreateModal() {
     setCreateError(null);

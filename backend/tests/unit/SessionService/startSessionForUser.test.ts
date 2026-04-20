@@ -112,7 +112,7 @@ describe("SessionService.startSessionForUser", () => {
     expect(mockUserRepo.update).not.toHaveBeenCalled();
   });
 
-  it("increments user loginsCounter", async () => {
+  it("increments user loginsCounter by default", async () => {
     const user = UserBuilder.aUser().withLoginsCounter(4).build();
     const mockSessionRepo = new MockSessionRepositoryBuilder()
       .withCreate(async (session: Session) => ({ ...session }))
@@ -133,6 +133,30 @@ describe("SessionService.startSessionForUser", () => {
       expect.objectContaining({
         id: user.id,
         loginsCounter: user.loginsCounter + 1,
+      }),
+    );
+  });
+
+  it("does not increment loginsCounter when incrementLoginCount is false", async () => {
+    const user = UserBuilder.aUser().withLoginsCounter(0).build();
+    const mockSessionRepo = new MockSessionRepositoryBuilder()
+      .withCreate(async (session: Session) => ({ ...session }))
+      .build();
+    const mockUserRepo = new MockUserRepositoryBuilder()
+      .withUpdate(async (u: User) => u)
+      .build();
+    const service = new SessionService(
+      mockSessionRepo,
+      mockUserRepo,
+      emptyUserEmailRepository(),
+    );
+
+    await service.startSessionForUser(user, { incrementLoginCount: false });
+
+    expect(mockUserRepo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: user.id,
+        loginsCounter: 0,
       }),
     );
   });

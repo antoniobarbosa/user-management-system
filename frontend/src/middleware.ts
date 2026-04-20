@@ -7,15 +7,20 @@ export function middleware(request: NextRequest) {
   const hasSession = Boolean(sessionCookie?.trim());
   const { pathname } = request.nextUrl;
 
-  /** Session for the Next.js app is carried in memory (`x-session-id`), not the backend cookie. */
   if (pathname.startsWith("/dashboard")) {
+    if (!hasSession) {
+      console.log("[middleware] /dashboard sem cookie → /auth", SESSION_COOKIE_NAME);
+      return NextResponse.redirect(new URL("/auth", request.url));
+    }
+    console.log("[middleware] /dashboard com cookie → next");
     return NextResponse.next();
   }
 
   if (pathname === "/auth") {
-    if (hasSession) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+    // Não redireccionar para /dashboard só porque existe cookie: o cookie pode estar
+    // inválido (DB reset, sessão revogada). HttpOnly não é limpo por clearSession() no cliente.
+    // O SessionProvider + página /auth validam com getMe e redireccionam quando apropriado.
+    console.log("[middleware] /auth → next (sem auto-redirect por cookie)");
     return NextResponse.next();
   }
 

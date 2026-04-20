@@ -8,21 +8,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   /** Use app dir so Docker builds (context = ./frontend) match local standalone tracing. */
   outputFileTracingRoot: __dirname,
-  async rewrites() {
-    const apiUrl = process.env.API_URL?.trim();
-    if (!apiUrl) {
-      throw new Error(
-        "Set API_URL (e.g. API_URL=http://localhost:3001) in .env.local for the /api proxy.",
-      );
-    }
-    const base = apiUrl.replace(/\/$/, "");
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${base}/api/:path*`,
-      },
-    ];
-  },
+  /** `/api/*` is handled by `src/app/api/[...path]/route.ts` so `Cookie` / `Set-Cookie` reach the backend. */
 };
 
 export default nextConfig;

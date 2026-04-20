@@ -44,7 +44,7 @@ const sessionService = new SessionService(
   log,
 );
 const userService = new UserService(userRepository, sessionService, log);
-const userController = new UserController(userService);
+const userController = new UserController(userService, sessionRepository);
 const sessionController = new SessionController(sessionService);
 
 registerErrorHandler(app);

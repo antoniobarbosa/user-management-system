@@ -67,7 +67,9 @@ export class UserService {
     }
 
     const { session, user: userWithSession } =
-      await this.sessionService.startSessionForUser(created);
+      await this.sessionService.startSessionForUser(created, {
+        incrementLoginCount: false,
+      });
     return { user: userWithSession, session };
   }
 
