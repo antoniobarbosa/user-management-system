@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { SessionService } from "@application/session/SessionService.js";
-import { NotFoundError } from "@domain/errors.js";
+import { UnauthorizedError } from "@domain/errors.js";
 import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,7 +15,7 @@ describe("SessionService.signIn", () => {
     vi.useRealTimers();
   });
 
-  it('throws "User not found" if email not found', async () => {
+  it('throws "Invalid credentials" if email not found (no user enumeration)', async () => {
     const mockUserRepo = new MockUserRepositoryBuilder().build();
     const mockEmailRepo = new MockUserEmailRepositoryBuilder()
       .withFindByEmail(async () => null)
@@ -29,7 +29,10 @@ describe("SessionService.signIn", () => {
 
     await expect(
       service.signIn("missing@example.com", "password"),
-    ).rejects.toThrow(NotFoundError);
+    ).rejects.toThrow(UnauthorizedError);
+    await expect(
+      service.signIn("missing@example.com", "password"),
+    ).rejects.toThrow("Invalid credentials");
 
     expect(mockUserRepo.findById).not.toHaveBeenCalled();
   });
