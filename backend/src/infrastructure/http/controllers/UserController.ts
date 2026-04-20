@@ -3,6 +3,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
 import { UserStatus } from "@domain/user/UserStatus.js";
+import type { ISessionRepository } from "@domain/repositories/ISessionRepository.js";
 import type {
   CreateUserInput,
   UpdateUserInput,
@@ -44,7 +45,10 @@ function parseUserStatus(value: unknown): UserStatus | undefined {
 }
 
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly sessionRepository: ISessionRepository,
+  ) {}
 
   async createUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     request.log.info({ handler: "createUser" }, "Handling user registration");
@@ -64,10 +68,26 @@ export class UserController {
     );
 
     if (session) {
-      const existing = request.cookies[SESSION_COOKIE_NAME];
-      const hadSessionCookie =
-        typeof existing === "string" && existing.trim().length > 0;
-      if (!hadSessionCookie) {
+      const cookieRaw = request.cookies[SESSION_COOKIE_NAME];
+      const existingId =
+        typeof cookieRaw === "string" && cookieRaw.trim()
+          ? cookieRaw.trim()
+          : "";
+
+      let shouldAttachCookie = true;
+      if (existingId) {
+        const previous = await this.sessionRepository.findById(existingId);
+        if (
+          previous &&
+          previous.terminatedAt == null &&
+          previous.userId !== session.userId
+        ) {
+          // Operador autenticado a criar outro utilizador: não substituir o cookie dele.
+          shouldAttachCookie = false;
+        }
+      }
+
+      if (shouldAttachCookie) {
         attachSessionCookie(reply, session.id);
       }
     }

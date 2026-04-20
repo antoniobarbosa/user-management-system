@@ -49,8 +49,8 @@ The backend is organised in three layers:
 - **User as aggregate root** with owned **UserEmail** records (primary email and uniqueness enforced at the persistence layer).
 - **Email** modelled as a **value object** in the domain where validation and invariants apply.
 - **Repository pattern** so application code depends on interfaces; Prisma stays in infrastructure.
-- **Session-based auth**: the browser stores the session id in an **HttpOnly cookie** (same-site requests use **`credentials: 'include'`**); the backend reads **`Cookie`** first, then optional **`x-session-id`** for API clients.
-- **Next.js rewrites** (`/api/*` → `API_URL/api/*`) so the browser talks to the same origin as the app, **avoiding CORS** for normal browser usage. The backend can still enforce **`CORS_ORIGIN`** for direct API access.
+- **Session-based auth**: the browser stores the session id in an **HttpOnly cookie** (same-site requests use **`credentials: 'include'`**); the backend resolves the session id from **`x-session-id` first**, then **`Cookie`**, so a stale cookie cannot override the SPA’s current session header after sign-up.
+- **Next.js App Router proxy** (`src/app/api/[...path]/route.ts` → `API_URL/api/*`) so the browser talks to the same origin as the app, **forwards `Cookie` / `Set-Cookie`**, and **avoids CORS** for normal browser usage. The backend can still enforce **`CORS_ORIGIN`** for direct API access.
 
 ### Spec compliance notes
 
@@ -127,7 +127,7 @@ Compose also interpolates **`POSTGRES_DB`** (optional; defaults to `usermgmt`) a
 
 For **local backend** development, use **`backend/.env`** (see `backend/.env.example`) with a `DATABASE_URL` pointing at your Postgres instance.
 
-For **local frontend** development, set **`API_URL`** in **`frontend/.env.local`** so `next.config.ts` can configure the `/api` rewrite.
+For **local frontend** development, set **`API_URL`** in **`frontend/.env.local`** so the server-side `/api` proxy can reach the backend.
 
 ## Testing
 
@@ -143,7 +143,7 @@ cd backend && npm test
 cd frontend && npm run test:e2e
 ```
 
-**Note:** Playwright can start the Next.js dev server from `playwright.config.ts`. The **API** must be reachable at the URL configured for the tests (typically `http://localhost:3001`). For optional **e2e DB cleanup**, run the backend with **`NODE_ENV=test`** so `DELETE /api/test/cleanup` is registered (see backend `index.ts`).
+**Note:** Playwright starts **`npm run dev:test`** (backend **`backend/.env.test`**, port **3002**, DB **`usermgmt_test`**) and Next.js with **`API_URL=http://localhost:3002`**. Run **`npm run db:migrate:test`** in `backend` once so the test DB has the schema. **`PLAYWRIGHT_BACKEND_URL`** overrides the cleanup base URL in `tests/e2e/global-setup.ts` (default `http://localhost:3002`). **`NODE_ENV=test`** enables `DELETE /api/test/cleanup` (see backend `index.ts`).
 
 ## CI/CD
 
@@ -163,7 +163,7 @@ Base path: **`/api`** (and **`/health`**).
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/health` | No | Health check. |
-| `POST` | `/api/users` | No | Register a new user (sign-up) **and** establish a session in the same request, as required by the spec (*"after signing-up, a user session should be established"*, *"the id received in the sign-up response is the session identifier"*). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created). A session **cookie** is set only when a new session is created **and** the request did not already carry a session cookie (so admins creating users from the dashboard are not logged out). |
+| `POST` | `/api/users` | No | Register a new user (sign-up) **and** establish a session in the same request, as required by the spec (*"after signing-up, a user session should be established"*, *"the id received in the sign-up response is the session identifier"*). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created). **`Set-Cookie`** is sent when the new session should become the browser cookie: **missing or invalid** cookie session (unknown or terminated), or same user; **not** when the request already carries a **valid** cookie for **another** user (operator creating a user from the dashboard). |
 | `POST` | `/api/auth/signin` | No | Sign in with email and password; returns session JSON and sets the session **cookie**. |
 | `GET` | `/api/users/me` | Yes | Returns the authenticated user (from session cookie or `x-session-id`). |
 | `GET` | `/api/users` | Yes | List users. Query: **`page`** (default `1`), **`limit`** (default `6`). Response includes `data` and `meta` (pagination). |
@@ -183,7 +183,7 @@ This section lists **conscious tradeoffs** rather than forgotten work. For each 
 ### Security & Auth
 
 - **Rate limiting on sign-in.** Not implemented at the app layer because brute-force protection is a **cross-cutting infrastructure concern** better solved at the edge (API gateway, WAF, or a plugin like `@fastify/rate-limit` fronted by Redis) so that limits are shared across horizontally-scaled instances. Implementing it in-process with an in-memory counter would give a false sense of security and would not survive a restart or a second replica.
-- **CSRF protection.** Skipped because the threat model is a **same-origin admin panel**: the SPA reaches the API through a Next.js rewrite, and the session cookie is set with **`SameSite=Lax`** and the **`__Host-`** prefix, which already blocks cross-site form posts for state-changing requests. A double-submit token or `@fastify/csrf-protection` would be added the moment the API is consumed from a different origin or embedded in third-party surfaces.
+- **CSRF protection.** Skipped because the threat model is a **same-origin admin panel**: the SPA reaches the API through the same-origin `/api` proxy, and the session cookie is set with **`SameSite=Lax`** and the **`__Host-`** prefix, which already blocks cross-site form posts for state-changing requests. A double-submit token or `@fastify/csrf-protection` would be added the moment the API is consumed from a different origin or embedded in third-party surfaces.
 - **Session expiration (idle / absolute TTL).** The spec defines `createdAt` and `terminatedAt` only, so the domain model reflects that. Expiry is currently enforced at the **cookie layer** via `maxAge`; a production-ready version would add an `expiresAt` column plus a sweeper job (or a Redis TTL) and reject expired sessions in the auth middleware.
 - **Role-based access control (RBAC).** The spec explicitly states **“assume the logged-in user is an administrator”**, so modelling roles and permissions would be scope creep. The hook already exists: the auth middleware attaches `request.session` to the request, so gating routes with a `requireRole("admin")` decorator is a small addition once roles become a real requirement.
 - **HttpOnly cookie + `x-session-id` hybrid.** The browser session lives in an **HttpOnly, Secure, SameSite=Lax** cookie, which is the right default for a web SPA. The `x-session-id` header is accepted as a fallback so the same API can serve non-browser clients (CLI, tests, mobile) without them needing to manage cookie jars, and so **local development across ports** (frontend `3000`, backend `3001`) keeps working when browsers refuse cross-port cookies. In production behind a single origin, the cookie path is the one exercised.

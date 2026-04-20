@@ -14,11 +14,13 @@ export function createAuthMiddleware(
     const rawHeader = request.headers["x-session-id"];
     const headerVal = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
+    // Preferir o header: o SPA envia o id da sessão atual na store; um cookie HttpOnly
+    // antigo (ex.: após sign-up com cookie stale) não deve sobrepor esse valor.
     const sessionId =
-      typeof fromCookie === "string" && fromCookie.trim()
-        ? fromCookie.trim()
-        : typeof headerVal === "string" && headerVal.trim()
-          ? headerVal.trim()
+      typeof headerVal === "string" && headerVal.trim()
+        ? headerVal.trim()
+        : typeof fromCookie === "string" && fromCookie.trim()
+          ? fromCookie.trim()
           : "";
 
     if (!sessionId) {

@@ -21,6 +21,15 @@ export type StartSessionResult = {
   user: User;
 };
 
+/** Options for {@link SessionService.startSessionForUser}. */
+export type StartSessionForUserOptions = {
+  /**
+   * When `false`, does not increment `loginsCounter` (registration / admin-created user
+   * with an initial session — not a password sign-in). Default `true` (sign-in).
+   */
+  incrementLoginCount?: boolean;
+};
+
 export class SessionService {
   constructor(
     private readonly sessionRepository: ISessionRepository,
@@ -62,11 +71,17 @@ export class SessionService {
       throw new ValidationError("User is inactive");
     }
 
-    return (await this.startSessionForUser(user)).session;
+    return (await this.startSessionForUser(user, { incrementLoginCount: true }))
+      .session;
   }
 
-  async startSessionForUser(user: User): Promise<StartSessionResult> {
+  async startSessionForUser(
+    user: User,
+    options?: StartSessionForUserOptions,
+  ): Promise<StartSessionResult> {
     SessionValidator.validateCreate(user);
+
+    const incrementLoginCount = options?.incrementLoginCount !== false;
 
     const now = new Date();
     const sessionEntity = new Session();
@@ -76,7 +91,9 @@ export class SessionService {
     sessionEntity.terminatedAt = null;
 
     const updatedUser = user.duplicate();
-    updatedUser.loginsCounter = user.loginsCounter + 1;
+    updatedUser.loginsCounter = incrementLoginCount
+      ? user.loginsCounter + 1
+      : user.loginsCounter;
     updatedUser.updatedAt = now;
     const savedUser = await this.userRepository.update(updatedUser);
 

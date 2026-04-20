@@ -11,24 +11,30 @@ export default defineConfig({
   timeout: 30_000,
   webServer: [
     {
-      command: "NODE_ENV=test npm run dev",
+      /** Runs `db:setup:test` (createdb + migrate) then API on :3002 via `backend/.env.test`. */
+      command: "npm run dev:test",
       cwd: "../backend",
-      url: "http://localhost:3001/health",
-      reuseExistingServer: !process.env.CI,
+      url: "http://localhost:3002/health",
+      reuseExistingServer: false,
       timeout: 120_000,
+      env: {
+        PORT: "3002",
+      },
     },
     {
       command: "npm run dev",
-      url: "http://localhost:3000",
-      reuseExistingServer: !process.env.CI,
+      url: "http://localhost:3005",
+      reuseExistingServer: false,
       timeout: 120_000,
+      /** E2e-only port; proxies `/api` to test backend (not `frontend/.env.local` / dev :3000). */
       env: {
-        API_URL: "http://localhost:3001",
+        API_URL: "http://localhost:3002",
+        PORT: "3005",
       },
     },
   ],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3005",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     trace: "off",

@@ -58,7 +58,7 @@ describe("UserService.createUser", () => {
     expect(result.status).toBe(UserStatus.ACTIVE);
   });
 
-  it("starts repository user with loginsCounter 0 and returns user with loginsCounter 1 after session", async () => {
+  it("starts repository user with loginsCounter 0 and keeps 0 after initial session (not a sign-in)", async () => {
     const mockRepo = new MockUserRepositoryBuilder()
       .withCreate(async (user: User) => user.duplicate())
       .build();
@@ -73,7 +73,7 @@ describe("UserService.createUser", () => {
 
     const passed = mockRepo.create.mock.calls[0][0];
     expect(passed.loginsCounter).toBe(0);
-    expect(result.loginsCounter).toBe(1);
+    expect(result.loginsCounter).toBe(0);
   });
 
   it("hashes password with bcrypt (hash ≠ plaintext and compare succeeds)", async () => {
