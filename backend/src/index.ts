@@ -1,5 +1,6 @@
 import "dotenv/config";
 import cookie from "@fastify/cookie";
+import cors from "@fastify/cors";
 import Fastify from "fastify";
 import type { AppLogger } from "@application/logger.js";
 import { UserService } from "@application/user/UserService.js";
@@ -21,6 +22,14 @@ const port = Number(process.env.PORT) || 3001;
 
 const app = Fastify({ logger: buildFastifyLoggerConfig() });
 
+const corsOrigin = process.env.CORS_ORIGIN?.split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+await app.register(cors, {
+  origin: corsOrigin && corsOrigin.length > 0 ? corsOrigin : false,
+  credentials: true,
+});
 await app.register(cookie);
 
 const log = app.log as unknown as AppLogger;

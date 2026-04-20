@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { UnauthorizedError } from "@domain/errors.js";
 import type { Session } from "@domain/session/Session.js";
 import { SessionService } from "@application/session/SessionService.js";
 import {
@@ -40,7 +41,7 @@ export class SessionController {
   ): Promise<void> {
     const sid = request.session;
     if (!sid) {
-      throw new Error("Unauthorized");
+      throw new UnauthorizedError("Unauthorized");
     }
     request.log.info(
       { handler: "terminateCurrentSession", sessionId: sid.id },

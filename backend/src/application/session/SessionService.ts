@@ -35,7 +35,7 @@ export class SessionService {
     const userEmail = await this.userEmailRepository.findByEmail(emailVo);
     if (!userEmail) {
       this.log.warn({ reason: "unknown_email" }, "Sign-in failed");
-      throw new NotFoundError("User not found");
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     const user = await this.userRepository.findById(userEmail.userId);
@@ -44,7 +44,7 @@ export class SessionService {
         { reason: "unknown_user", userId: userEmail.userId },
         "Sign-in failed",
       );
-      throw new NotFoundError("User not found");
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     if (!user.password) {

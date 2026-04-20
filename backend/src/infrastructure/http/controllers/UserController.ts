@@ -1,4 +1,4 @@
-import { NotFoundError, ValidationError } from "@domain/errors.js";
+import { NotFoundError, UnauthorizedError, ValidationError } from "@domain/errors.js";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Session } from "@domain/session/Session.js";
 import type { User } from "@domain/user/User.js";
@@ -84,11 +84,11 @@ export class UserController {
   ): Promise<void> {
     const sid = request.session;
     if (!sid) {
-      throw new Error("Unauthorized");
+      throw new UnauthorizedError("Unauthorized");
     }
     const user = await this.userService.findById(sid.userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
     reply.send(toUserResponse(user));
   }
