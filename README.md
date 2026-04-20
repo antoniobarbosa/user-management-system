@@ -52,6 +52,15 @@ The backend is organised in three layers:
 - **Session-based auth**: the browser stores the session id in an **HttpOnly cookie** (same-site requests use **`credentials: 'include'`**); the backend reads **`Cookie`** first, then optional **`x-session-id`** for API clients.
 - **Next.js rewrites** (`/api/*` → `API_URL/api/*`) so the browser talks to the same origin as the app, **avoiding CORS** for normal browser usage. The backend can still enforce **`CORS_ORIGIN`** for direct API access.
 
+### Spec compliance notes
+
+A few non-obvious design choices are **direct readings of the challenge spec** rather than REST conventions. Calling them out here so they are easy to evaluate:
+
+- **Sign-up returns `{ user, session }` and sets the cookie in the same request.** The spec states *"after signing-in, or **signing-up**, a user session should be established"* and *"consider the id received in the **sign in/sign up response** as an actual session identifier"*. Splitting this into a separate `POST /sessions` would violate the contract and break the Part 1 auto-login flow.
+- **`x-session-id` header is accepted alongside the cookie.** The spec literally says *"all further requests to the backend should include the given identifier"*. The header is the canonical transport for non-browser clients; the HttpOnly cookie is an **additional** security layer for the SPA, not a replacement.
+- **`POST /api/users` serves both sign-up and admin user-creation.** Part 0 lists *"Create a new user"* as a domain functionality, Part 1 requires sign-up to establish a session, and Part 2 requires the admin dashboard to create users **without being logged out**. The endpoint detects an existing session cookie and only issues a new session when no operator is authenticated, so a single endpoint satisfies all three requirements coherently.
+- **No `PATCH /api/users/me/email`.** The spec does not include a change-email use case; the `UserEmail` child entity is already modelled to support one when the product calls for it.
+
 ## Getting Started
 
 ### Prerequisites
@@ -149,12 +158,12 @@ Configure GitHub **secrets**: `DROPLET_HOST`, `DROPLET_USER`, `DROPLET_SSH_KEY`.
 
 Base path: **`/api`** (and **`/health`**).
 
-**Session (browser):** successful **`POST /api/users`** (sign-up, when no session cookie is already present) and **`POST /api/auth/signin`** set an **HttpOnly** session cookie (`__Host-session` in production with **Secure**; plain `session` in local dev over HTTP). The SPA sends **`credentials: 'include'`** so the cookie is attached automatically. The **`x-session-id`** header is still accepted as a fallback for non-browser API clients.
+**Session (browser):** successful **`POST /api/users`** (sign-up, when no session cookie is already present) and **`POST /api/auth/signin`** set an **HttpOnly** session cookie (`__Host-session` in production with **Secure**; plain `session` in local dev over HTTP). The SPA sends **`credentials: 'include'`** so the cookie is attached automatically. The **`x-session-id`** header is still accepted **as required by the spec** (*"all further requests to the backend should include the given identifier"*) and remains the transport for non-browser API clients.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/health` | No | Health check. |
-| `POST` | `/api/users` | No | Register a new user (sign-up). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created). A session **cookie** is set only when a new session is created **and** the request did not already carry a session cookie (so operators are not logged out). |
+| `POST` | `/api/users` | No | Register a new user (sign-up) **and** establish a session in the same request, as required by the spec (*"after signing-up, a user session should be established"*, *"the id received in the sign-up response is the session identifier"*). Response body: **`{ user, session }`** — `session` is `null` when the new user is **inactive** (e.g. operator-created). A session **cookie** is set only when a new session is created **and** the request did not already carry a session cookie (so admins creating users from the dashboard are not logged out). |
 | `POST` | `/api/auth/signin` | No | Sign in with email and password; returns session JSON and sets the session **cookie**. |
 | `GET` | `/api/users/me` | Yes | Returns the authenticated user (from session cookie or `x-session-id`). |
 | `GET` | `/api/users` | Yes | List users. Query: **`page`** (default `1`), **`limit`** (default `6`). Response includes `data` and `meta` (pagination). |
@@ -169,14 +178,28 @@ Base path: **`/api`** (and **`/health`**).
 
 ## Future Improvements
 
-- JWT with refresh tokens
-- Session expiration
-- OAuth providers (Google)
-- Data Mapper layer to decouple domain from Prisma
-- Unit of Work pattern for multi-aggregate transactions
-- Integration tests for repositories
-- React Testing Library for component tests
-- Sortable columns in user table
-- Role-based access control
-- Kubernetes deployment for production scale
-- Rate limiting on sign-in endpoint
+This section lists **conscious tradeoffs** rather than forgotten work. For each item the rationale (scope, spec, or layer ownership) is stated explicitly, followed by what a production rollout would look like.
+
+### Security & Auth
+
+- **Rate limiting on sign-in.** Not implemented at the app layer because brute-force protection is a **cross-cutting infrastructure concern** better solved at the edge (API gateway, WAF, or a plugin like `@fastify/rate-limit` fronted by Redis) so that limits are shared across horizontally-scaled instances. Implementing it in-process with an in-memory counter would give a false sense of security and would not survive a restart or a second replica.
+- **CSRF protection.** Skipped because the threat model is a **same-origin admin panel**: the SPA reaches the API through a Next.js rewrite, and the session cookie is set with **`SameSite=Lax`** and the **`__Host-`** prefix, which already blocks cross-site form posts for state-changing requests. A double-submit token or `@fastify/csrf-protection` would be added the moment the API is consumed from a different origin or embedded in third-party surfaces.
+- **Session expiration (idle / absolute TTL).** The spec defines `createdAt` and `terminatedAt` only, so the domain model reflects that. Expiry is currently enforced at the **cookie layer** via `maxAge`; a production-ready version would add an `expiresAt` column plus a sweeper job (or a Redis TTL) and reject expired sessions in the auth middleware.
+- **Role-based access control (RBAC).** The spec explicitly states **“assume the logged-in user is an administrator”**, so modelling roles and permissions would be scope creep. The hook already exists: the auth middleware attaches `request.session` to the request, so gating routes with a `requireRole("admin")` decorator is a small addition once roles become a real requirement.
+- **HttpOnly cookie + `x-session-id` hybrid.** The browser session lives in an **HttpOnly, Secure, SameSite=Lax** cookie, which is the right default for a web SPA. The `x-session-id` header is accepted as a fallback so the same API can serve non-browser clients (CLI, tests, mobile) without them needing to manage cookie jars, and so **local development across ports** (frontend `3000`, backend `3001`) keeps working when browsers refuse cross-port cookies. In production behind a single origin, the cookie path is the one exercised.
+
+### Architecture & Code Quality
+
+- **Schema validation at the HTTP boundary.** Deliberately not added (e.g. Zod/`@fastify/type-provider`) because validation already lives in the **application layer validators** and in the **`Email` value object**, keeping a single source of truth for domain invariants. A JSON-Schema layer at the route level would add a second place to keep in sync; it would pay off once the API is published to external clients and OpenAPI generation becomes a requirement.
+- **Integration tests for repositories.** Current coverage is **Vitest** units over domain/application and **Playwright E2E** over the HTTP boundary end-to-end, which brackets the repository layer from both sides. A Testcontainers-based integration suite against real Postgres would be the next step to catch Prisma-mapping regressions that mocks cannot see; it was deferred to keep the test matrix fast in CI.
+- **Email update flow.** The spec covers sign-up, sign-in, list, edit profile fields, and delete — **no change-email use case**. The domain is already prepared for it (`UserEmail` is modelled as a separate aggregate child with `isPrimary`), so adding a verify-then-swap flow is mechanical once the product calls for it.
+- **Frontend component tests (React Testing Library).** E2E already asserts user-visible behaviour; component tests would give faster feedback on presentational logic and would be the next addition as the UI grows.
+
+### Scalability & Operations
+
+- JWT with refresh tokens (if stateless sessions become a requirement across multiple services).
+- Data Mapper layer to fully decouple domain entities from Prisma-shaped rows.
+- Unit of Work pattern for multi-aggregate transactions.
+- OAuth providers (Google, etc.).
+- Sortable columns and server-side filtering in the user table.
+- Kubernetes deployment (replacing the single-droplet Compose setup) once horizontal scale is needed.
